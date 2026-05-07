@@ -14,6 +14,13 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+export const premiumApi = {
+    getProfessionals: () => api.get('/premium/professionals'),
+    payAndAssign: (id_profesional: number, monto: number) => 
+        api.post('/premium/payment/mock', { id_profesional, monto, metodo: "tarjeta_simulada" }),
+    getAssignedPatients: () => api.get('/premium/assigned-patients')
+};
+
 export const authApi = {
     login: (formData: FormData) => api.post('/auth/login/access-token', formData),
     signup: (userData: any) => api.post('/auth/signup', userData),

@@ -64,3 +64,24 @@ class Recurso(Base):
     titulo = Column(String(200), nullable=False)
     contenido = Column(Text)
     id_usuario_administrador = Column(Integer, ForeignKey("Usuario.id"))
+
+class AsignacionProfesional(Base):
+    __tablename__ = "AsignacionProfesional"
+    id = Column(Integer, primary_key=True, index=True)
+    id_paciente = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
+    id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
+    fecha_inicio = Column(DateTime, default=datetime.utcnow)
+    activa = Column(Boolean, default=True)
+
+    paciente = relationship("Usuario", foreign_keys=[id_paciente])
+    profesional = relationship("Usuario", foreign_keys=[id_profesional])
+
+class TransaccionMock(Base):
+    __tablename__ = "TransaccionMock"
+    id = Column(Integer, primary_key=True, index=True)
+    id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
+    monto = Column(Float, nullable=False)
+    fecha = Column(DateTime, default=datetime.utcnow)
+    estado = Column(String(50), default="completado") # pendiente, completado, fallido
+    
+    usuario = relationship("Usuario")

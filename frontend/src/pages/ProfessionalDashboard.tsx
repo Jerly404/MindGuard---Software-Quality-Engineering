@@ -1,81 +1,83 @@
-import React, { useState } from 'react';
-import { Users, UserPlus, Bell, Search, Filter } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { premiumApi } from '../services/api';
+import { Users, FileText, Activity } from 'lucide-react';
 
-const ProfessionalDashboard: React.FC = () => {
-    // Mock data based on requirements
-    const [patients] = useState([
-        { id: 1, nombre: "Juan Pérez", ultimaEvaluacion: "2024-04-25", riesgo: "Moderado", tendencia: "Deterioro", alerta: true },
-        { id: 2, nombre: "Maria Garcia", ultimaEvaluacion: "2024-04-26", riesgo: "Bajo", tendencia: "Mejora", alerta: false },
-        { id: 3, nombre: "Carlos Ruiz", ultimaEvaluacion: "2024-04-24", riesgo: "Alto", tendencia: "Deterioro", alerta: true },
-    ]);
+const ProfessionalDashboard = () => {
+    const [patients, setPatients] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPatients();
+    }, []);
+
+    const fetchPatients = async () => {
+        try {
+            const response = await premiumApi.getAssignedPatients();
+            setPatients(response.data);
+        } catch (error) {
+            console.error("Error fetching patients", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className="container professional-dashboard animate-fade-in">
-            <header className="dashboard-top">
-                <div className="welcome-text">
-                    <h1>Panel del Profesional</h1>
-                    <p>Gestión longitudinal y seguimiento de pacientes asignados.</p>
-                </div>
-                <button className="btn-primary"><UserPlus size={18} /> Vincular Nuevo Paciente</button>
-            </header>
-
-            <div className="stats-summary-grid">
-                <div className="stat-card">
-                    <span className="stat-label">Total Pacientes</span>
-                    <div className="stat-value-row">
-                        <span className="stat-value">{patients.length}</span>
-                        <Users size={24} className="text-muted" />
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <span className="stat-label">Alertas Activas</span>
-                    <div className="stat-value-row">
-                        <span className="stat-value text-error">2</span>
-                        <Bell size={24} className="text-error" />
-                    </div>
-                </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-slate-900">Panel del Profesional</h1>
+                <p className="mt-2 text-slate-600">Bienvenido. Aquí puedes gestionar a tus pacientes asignados.</p>
             </div>
 
-            <div className="card-professional">
-                <div className="table-controls">
-                    <div className="search-box">
-                        <Search size={18} />
-                        <input type="text" placeholder="Buscar paciente..." />
-                    </div>
-                    <button className="btn-secondary"><Filter size={18} /> Filtros</button>
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-slate-500" />
+                    <h3 className="text-lg leading-6 font-medium text-slate-900">Mis Pacientes</h3>
                 </div>
-
-                <table className="patients-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre del Paciente</th>
-                            <th>Última Evaluación</th>
-                            <th>Nivel de Riesgo</th>
-                            <th>Tendencia</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {patients.map(p => (
-                            <tr key={p.id} className={p.alerta ? 'row-alert' : ''}>
-                                <td>
-                                    <div className="patient-info">
-                                        <div className="avatar">{p.nombre[0]}</div>
-                                        <span>{p.nombre}</span>
-                                        {p.alerta && <span className="alert-dot" title="Alerta de deterioro"></span>}
+                
+                {loading ? (
+                    <div className="p-6 text-center text-slate-500">Cargando pacientes...</div>
+                ) : patients.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Users className="mx-auto h-12 w-12 text-slate-300 mb-4" />
+                        <h3 className="text-sm font-medium text-slate-900">No hay pacientes</h3>
+                        <p className="mt-1 text-sm text-slate-500">Aún no tienes pacientes asignados a tu supervisión.</p>
+                    </div>
+                ) : (
+                    <ul className="divide-y divide-slate-200">
+                        {patients.map((patient) => (
+                            <li key={patient.id} className="hover:bg-slate-50 transition-colors">
+                                <div className="px-6 py-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                            <span className="text-indigo-700 font-bold">{patient.nombre.charAt(0).toUpperCase()}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-900">{patient.nombre}</p>
+                                            <p className="text-sm text-slate-500">{patient.email}</p>
+                                        </div>
                                     </div>
-                                </td>
-                                <td>{new Date(p.ultimaEvaluacion).toLocaleDateString()}</td>
-                                <td><span className={`risk-tag risk-${p.riesgo.toLowerCase()}`}>{p.riesgo}</span></td>
-                                <td>{p.tendencia}</td>
-                                <td>
-                                    <button className="btn-small">Ver Detalles</button>
-                                    <button className="btn-small btn-outline">Protocolo</button>
-                                </td>
-                            </tr>
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500">Última Evaluación</p>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
+                                                ${patient.ultima_evaluacion_riesgo === 'ALTO' ? 'bg-red-100 text-red-800' : 
+                                                patient.ultima_evaluacion_riesgo === 'MEDIO' ? 'bg-yellow-100 text-yellow-800' : 
+                                                patient.ultima_evaluacion_riesgo === 'BAJO' ? 'bg-green-100 text-green-800' : 
+                                                'bg-slate-100 text-slate-800'}`}>
+                                                {patient.ultima_evaluacion_riesgo}
+                                            </span>
+                                        </div>
+                                        <button className="text-indigo-600 hover:text-indigo-900 font-medium text-sm flex items-center gap-1">
+                                            <FileText className="h-4 w-4" />
+                                            Ver Historial
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
                         ))}
-                    </tbody>
-                </table>
+                    </ul>
+                )}
             </div>
         </div>
     );

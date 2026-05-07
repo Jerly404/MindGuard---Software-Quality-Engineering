@@ -5,7 +5,7 @@ from app.models.base import Base
 from app.api import deps
 from contextlib import asynccontextmanager
 
-from app.api import auth, assessments
+from app.api import auth, assessments, premium
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +39,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(assessments.router, prefix=f"{settings.API_V1_STR}/assessments", tags=["assessments"])
+app.include_router(premium.router, prefix=f"{settings.API_V1_STR}/premium", tags=["premium"])
 
 @app.get("/")
 def root():
