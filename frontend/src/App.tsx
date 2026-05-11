@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -7,6 +7,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import Assessment from './pages/Assessment';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { authApi } from './services/api';
 import './index.css';
 
@@ -35,16 +37,22 @@ const HomeRedirect = () => {
 };
 
 function App() {
-  const token = localStorage.getItem('token');
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+
+  const handleAuthChange = () => {
+    setIsAuthenticated(!!localStorage.getItem('token'));
+  };
 
   return (
     <Router>
       <div className="App">
-        {token && <Navbar />}
+        {isAuthenticated && <Navbar onLogout={handleAuthChange} />}
         <main className="main-content">
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login onLogin={handleAuthChange} />} />
+            <Route path="/signup" element={<Signup onSignup={handleAuthChange} />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route 
               path="/" 
               element={
@@ -69,3 +77,4 @@ function App() {
 }
 
 export default App;
+

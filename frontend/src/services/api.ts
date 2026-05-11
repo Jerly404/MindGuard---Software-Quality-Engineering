@@ -16,14 +16,17 @@ api.interceptors.request.use((config) => {
 
 export const premiumApi = {
     getProfessionals: () => api.get('/premium/professionals'),
-    payAndAssign: (id_profesional: number, monto: number) => 
-        api.post('/premium/payment/mock', { id_profesional, monto, metodo: "tarjeta_simulada" }),
-    getAssignedPatients: () => api.get('/premium/assigned-patients')
+    payAndAssign: (id_profesional: number, monto: number, metodo: string) => 
+        api.post('/premium/payment/mock', { id_profesional, monto, metodo }),
+    getAssignedPatients: () => api.get('/premium/assigned-patients'),
+    getEarnings: () => api.get('/premium/earnings'),
+    getPatientHistory: (patientId: number) => api.get(`/premium/patient-history/${patientId}`)
 };
 
 export const authApi = {
     login: (formData: FormData) => api.post('/auth/login/access-token', formData),
     signup: (userData: any) => api.post('/auth/signup', userData),
+    createProfessional: (userData: any) => api.post('/auth/create-professional', userData),
     getCurrentUser: () => {
         const token = localStorage.getItem('token');
         if (!token) return null;
@@ -42,6 +45,9 @@ export const authApi = {
 
 export const assessmentApi = {
     submit: (data: any) => api.post('/assessments/', data),
+    submitChat: (messages: any[], step: string) => api.post('/assessments/chat', { messages, step }),
+    getChatGreeting: () => api.get('/assessments/chat/greeting'),
+    getChatMessage: (messages: any[], step: string) => api.post('/assessments/chat/message', { messages, step }),
     getHistory: () => api.get('/assessments/me'),
 };
 

@@ -27,3 +27,10 @@ class Token(BaseModel):
 
 class TokenPayload(BaseModel):
     sub: Optional[int] = None
+
+class Msg(BaseModel):
+    msg: str
+
+class NewPassword(BaseModel):
+    token: str
+    new_password: str

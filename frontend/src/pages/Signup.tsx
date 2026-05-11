@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { User, Mail, Lock } from 'lucide-react';
 
-const Signup: React.FC = () => {
+const Signup: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [nombre, setNombre] = useState('');
@@ -21,6 +21,7 @@ const Signup: React.FC = () => {
             formData.append('password', password);
             const response = await authApi.login(formData);
             localStorage.setItem('token', response.data.access_token);
+            onSignup();
             navigate('/');
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Signup failed');

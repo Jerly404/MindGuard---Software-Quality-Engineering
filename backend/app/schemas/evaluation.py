@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -12,13 +12,22 @@ class EvaluationBase(BaseModel):
 class EvaluationCreate(EvaluationBase):
     pass
 
+class DetailedAIAnalysis(BaseModel):
+    emociones_detectadas: Dict[str, float]
+    factores_detectados: List[str]
+    riesgo_emocional: str
+    patrones: List[str]
+    interpretacion: str
+    recomendacion: str
+
 class Evaluation(EvaluationBase):
     id: int
     fecha: datetime
     nivelRiesgo: str
     resultadoIA: Optional[str] = None
     id_usuario: int
-    has_high_risk: bool = False # Campo nuevo para indicar riesgo suicida/autolesión
+    has_high_risk: bool = False
+    analisis_detallado: Optional[DetailedAIAnalysis] = None
 
     class Config:
         from_attributes = True

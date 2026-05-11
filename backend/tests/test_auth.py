@@ -1,39 +1,46 @@
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import pytest
+import pytest_asyncio
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.main import app
 from app.api.deps import get_db
 from app.models.base import Base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+TestingSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False)
 
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
+async def override_get_db():
+    async with TestingSessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
-app.dependency_overrides[get_db] = override_get_db
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_database():
+    app.dependency_overrides[get_db] = override_get_db
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    app.dependency_overrides.clear()
 
-client = TestClient(app)
-
-def test_signup():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    response = client.post(
-        "/api/v1/auth/signup",
-        json={"email": "test@example.com", "password": "password123", "nombre": "Test User"},
-    )
+@pytest.mark.asyncio
+async def test_signup():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post(
+            "/api/v1/auth/signup",
+            json={"email": "test@example.com", "password": "password123", "nombre": "Test User"},
+        )
     assert response.status_code == 200
     assert response.json()["email"] == "test@example.com"
 
-def test_login():
-    response = client.post(
-        "/api/v1/auth/login/access-token",
-        data={"username": "test@example.com", "password": "password123"},
-    )
+@pytest.mark.asyncio
+async def test_login():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post(
+            "/api/v1/auth/login/access-token",
+            data={"username": "test@example.com", "password": "password123"},
+        )
     assert response.status_code == 200
     assert "access_token" in response.json()

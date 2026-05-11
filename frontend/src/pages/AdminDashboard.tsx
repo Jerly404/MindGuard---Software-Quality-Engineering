@@ -2,24 +2,23 @@ import React, { useState } from 'react';
 import { 
     Shield, Server, Database, Activity, Users, UserPlus, Bell, 
     TrendingUp, TrendingDown, Minus, Trash2, Edit, CheckCircle, 
-    XCircle, Info, MessageSquare, AlertTriangle 
+    XCircle, Info, MessageSquare, AlertTriangle, Lock
 } from 'lucide-react';
+import { authApi } from '../services/api';
 
 const AdminDashboard: React.FC = () => {
-    // State for Users
+    // ... rest of states
     const [users] = useState([
         { id: 1, nombre: "Himer Jerly", email: "hjerlycondorluna@gmail.com", ultimaEval: "2024-04-27", riesgo: "Moderado", tendencia: "Deterioro", phq9: 14, gad7: 12, ai: "Distress detectado" },
         { id: 2, nombre: "Luis Miguel", email: "lm@mindguard.ai", ultimaEval: "2024-04-26", riesgo: "Bajo", tendencia: "Mejora", phq9: 4, gad7: 3, ai: "Estable" },
         { id: 3, nombre: "Julio Cesar", email: "jc@mindguard.ai", ultimaEval: "2024-04-25", riesgo: "Alto", tendencia: "Estable", phq9: 22, gad7: 18, ai: "Crisis potencial" },
     ]);
 
-    // State for Professionals
     const [professionals, setProfessionals] = useState([
         { id: 1, nombre: "Dr. Roberto Silva", email: "rsilva@mindguard.ai", colegiatura: "CPPe 12345", especialidad: "Ansiedad y Depresión", pacientes: 12 },
         { id: 2, nombre: "Dra. Ana Valdivia", email: "avaldivia@mindguard.ai", colegiatura: "CPPe 67890", especialidad: "Terapia Cognitiva", pacientes: 8 },
     ]);
 
-    // State for Notifications/Alerts
     const [alerts] = useState([
         { id: 1, usuario: "Julio Cesar", tipo: "Riesgo Crítico", detalle: "Puntaje PHQ-9 de 22 detectado. Requiere intervención.", fecha: "Hace 10 min", leido: false },
         { id: 2, usuario: "Himer Jerly", tipo: "Deterioro", detalle: "IA detectó cambio de tono negativo en el diario emocional.", fecha: "Hace 2 horas", leido: false },
@@ -29,6 +28,42 @@ const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'usuarios' | 'profesionales' | 'alertas'>('usuarios');
     const [viewingAlert, setViewingAlert] = useState<any | null>(null);
 
+    // Form states
+    const [newPro, setNewPro] = useState({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
+    const [loading, setLoading] = useState(false);
+
+    const handleAddProfessional = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const response = await authApi.createProfessional({
+                nombre: newPro.nombre,
+                email: newPro.email,
+                password: newPro.password,
+                rol: "profesional"
+            });
+
+            // Actualizar la lista local (simulado ya que no tenemos endpoint de listado real aún)
+            const createdPro = {
+                id: response.data.id,
+                nombre: newPro.nombre,
+                email: newPro.email,
+                colegiatura: newPro.colegiatura,
+                especialidad: newPro.especialidad,
+                pacientes: 0
+            };
+            
+            setProfessionals([...professionals, createdPro]);
+            setIsAddingPsychologist(false);
+            setNewPro({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
+            alert("Profesional registrado exitosamente en el sistema.");
+        } catch (error: any) {
+            alert(error.response?.data?.detail || "Error al registrar al profesional");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleDeleteProfessional = (id: number) => {
         if (window.confirm("¿Está seguro de eliminar a este profesional? Se desvincularán sus pacientes.")) {
             setProfessionals(professionals.filter(p => p.id !== id));
@@ -37,6 +72,7 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div className="container admin-dashboard animate-fade-in">
+            {/* ... rest of JSX ... */}
             <header className="dashboard-top">
                 <div className="welcome-text">
                     <h1>Administración del Ecosistema</h1>
@@ -237,22 +273,53 @@ const AdminDashboard: React.FC = () => {
                             <h3>Registrar Profesional de Salud</h3>
                             <button className="btn-close" onClick={() => setIsAddingPsychologist(false)}><XCircle /></button>
                         </div>
-                        <form className="admin-form-v2" onSubmit={(e) => { e.preventDefault(); setIsAddingPsychologist(false); }}>
+                        <form className="admin-form-v2" onSubmit={handleAddProfessional}>
                             <div className="input-field">
                                 <label>Nombre Completo</label>
-                                <input type="text" placeholder="Ej. Dr. Juan Pérez" required />
+                                <input 
+                                    type="text" 
+                                    placeholder="Ej. Dr. Juan Pérez" 
+                                    value={newPro.nombre}
+                                    onChange={(e) => setNewPro({...newPro, nombre: e.target.value})}
+                                    required 
+                                />
                             </div>
                             <div className="input-field">
                                 <label>Correo Institucional</label>
-                                <input type="email" placeholder="email@mindguard.ai" required />
+                                <input 
+                                    type="email" 
+                                    placeholder="email@mindguard.ai" 
+                                    value={newPro.email}
+                                    onChange={(e) => setNewPro({...newPro, email: e.target.value})}
+                                    required 
+                                />
+                            </div>
+                            <div className="input-field">
+                                <label>Contraseña Temporal</label>
+                                <input 
+                                    type="password" 
+                                    placeholder="********" 
+                                    value={newPro.password}
+                                    onChange={(e) => setNewPro({...newPro, password: e.target.value})}
+                                    required 
+                                />
                             </div>
                             <div className="input-field">
                                 <label>Número de Colegiatura</label>
-                                <input type="text" placeholder="CPPe XXXXX" required />
+                                <input 
+                                    type="text" 
+                                    placeholder="CPPe XXXXX" 
+                                    value={newPro.colegiatura}
+                                    onChange={(e) => setNewPro({...newPro, colegiatura: e.target.value})}
+                                    required 
+                                />
                             </div>
                             <div className="input-field">
                                 <label>Especialidad</label>
-                                <select>
+                                <select 
+                                    value={newPro.especialidad}
+                                    onChange={(e) => setNewPro({...newPro, especialidad: e.target.value})}
+                                >
                                     <option>Psicología Clínica</option>
                                     <option>Terapia Conductual</option>
                                     <option>Neuropsicología</option>
@@ -260,7 +327,9 @@ const AdminDashboard: React.FC = () => {
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn-secondary" onClick={() => setIsAddingPsychologist(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary">Vincular al Sistema</button>
+                                <button type="submit" className="btn-primary" disabled={loading}>
+                                    {loading ? 'Procesando...' : 'Vincular al Sistema'}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -313,3 +382,4 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+

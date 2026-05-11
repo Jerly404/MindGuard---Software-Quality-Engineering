@@ -1,286 +1,315 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAssessments } from '../hooks/useAssessments';
-import { PHQ9_QUESTIONS, GAD7_QUESTIONS, RESPONSE_OPTIONS } from '../services/questions';
+import { assessmentApi } from '../services/api';
 import { 
     ArrowLeft, ArrowRight, CheckCircle, Brain, HeartPulse, 
-    ShieldCheck, AlertTriangle, MessageSquare, Save, Info, Video
+    ShieldCheck, AlertTriangle, Send, User, Bot, Info, Sparkles, RefreshCw
 } from 'lucide-react';
 
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+const FLOW = ["mood", "energy", "sleep", "anxiety", "conclusion"];
+
 const Assessment: React.FC = () => {
-    const { submitEvaluation, isSubmitting: loading } = useAssessments();
-    const [step, setStep] = useState(0); 
-    const [phq9Answers, setPhq9Answers] = useState<number[]>(new Array(9).fill(-1));
-    const [gad7Answers, setGad7Answers] = useState<number[]>(new Array(7).fill(-1));
-    const [textInput, setTextInput] = useState('');
+    const [step, setStep] = useState(0); // 0: Consent, 1: Chat, 2: Result
+    const [chatStepIndex, setChatStepIndex] = useState(0);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [inputValue, setInputValue] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [loadingResult, setLoadingResult] = useState(false);
     const [result, setResult] = useState<any>(null);
+    
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
-    const handlePhq9Change = (index: number, value: number) => {
-        const newAnswers = [...phq9Answers];
-        newAnswers[index] = value;
-        setPhq9Answers(newAnswers);
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const handleGad7Change = (index: number, value: number) => {
-        const newAnswers = [...gad7Answers];
-        newAnswers[index] = value;
-        setGad7Answers(newAnswers);
-    };
+    useEffect(() => {
+        if (step === 1 && messages.length === 0) {
+            loadGreeting();
+        }
+        scrollToBottom();
+    }, [step, messages, isTyping]);
 
-    const handleSubmit = async () => {
-        const phq9Total = phq9Answers.reduce((a, b) => a + (b === -1 ? 0 : b), 0);
-        const gad7Total = gad7Answers.reduce((a, b) => a + (b === -1 ? 0 : b), 0);
-        
+    const loadGreeting = async () => {
+        setIsTyping(true);
         try {
-            const response = await submitEvaluation({
-                phq9Score: phq9Total,
-                gad7Score: gad7Total,
-                phq9Answers: phq9Answers,
-                gad7Answers: gad7Answers,
-                text_input: textInput
-            });
-            // La respuesta de axios tiene los datos en response.data
-            setResult(response.data);
-            setStep(4);
-        } catch (error) {
-            console.error(error);
-            alert('Error al enviar la evaluación. Por favor intenta de nuevo.');
+            const res = await assessmentApi.getChatGreeting();
+            setMessages([{ role: 'assistant', content: res.data.response }]);
+        } catch (e) {
+            setMessages([{ role: 'assistant', content: "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
+        } finally {
+            setIsTyping(false);
         }
     };
 
-    const isStepValid = () => {
-        if (step === 1) return phq9Answers.every(a => a !== -1);
-        if (step === 2) return gad7Answers.every(a => a !== -1);
-        if (step === 3) return textInput.trim().length > 10;
-        return true;
+    const handleSendMessage = async () => {
+        if (!inputValue.trim()) return;
+
+        const userMsg: Message = { role: 'user', content: inputValue };
+        const newMessages = [...messages, userMsg];
+        setMessages(newMessages);
+        setInputValue('');
+        
+        try {
+            const currentStep = FLOW[chatStepIndex];
+            
+            if (chatStepIndex < FLOW.length - 1) {
+                setIsTyping(true);
+                const res = await assessmentApi.getChatMessage(newMessages, currentStep);
+                setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }]);
+                setChatStepIndex(chatStepIndex + 1);
+                setIsTyping(false);
+            } else {
+                finishAssessment(newMessages);
+            }
+        } catch (error) {
+            setMessages(prev => [...prev, { role: 'assistant', content: "Hubo un pequeño error. ¿Podrías repetirme eso?" }]);
+        }
+    };
+
+    const finishAssessment = async (finalMessages: Message[]) => {
+        setLoadingResult(true);
+        try {
+            const currentStep = FLOW[chatStepIndex];
+            const response = await assessmentApi.submitChat(finalMessages, currentStep);
+            setResult(response.data);
+            setStep(2);
+        } catch (error) {
+            alert("Error al analizar la conversación.");
+        } finally {
+            setLoadingResult(false);
+        }
     };
 
     const renderConsent = () => (
-        <div className="card-professional animate-fade-in-up">
-            <div className="card-header-icon text-primary bg-primary-light">
-                <ShieldCheck size={32} />
-            </div>
-            <h2 className="title-large">Espacio Seguro y Privado</h2>
-            <p className="subtitle">Tu bienestar es nuestra prioridad. Antes de comenzar, es importante establecer este acuerdo de confianza.</p>
-            
-            <div className="consent-content">
-                <div className="consent-item">
-                    <CheckCircle size={20} className="text-success" />
-                    <p><strong>Privacidad:</strong> Tus datos están encriptados y solo tú (y tu profesional si lo autorizas) tienen acceso.</p>
+        <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in slide-in-from-bottom-4">
+            <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
+                <div className="h-20 w-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600">
+                    <ShieldCheck size={40} />
                 </div>
-                <div className="consent-item">
-                    <CheckCircle size={20} className="text-success" />
-                    <p><strong>Propósito:</strong> Esta es una herramienta de monitoreo clínico, no un diagnóstico definitivo.</p>
+                <h1 className="text-3xl font-bold text-slate-900 mb-4">Chat Terapéutico MindGuard</h1>
+                <p className="text-slate-600 mb-8 text-lg">
+                    En lugar de formularios fríos, hoy tendremos una pequeña charla. 
+                    Nuestra IA analizará tus respuestas para brindarte el mejor apoyo posible.
+                </p>
+                
+                <div className="grid gap-4 text-left mb-10">
+                    <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl">
+                        <CheckCircle className="text-emerald-500 shrink-0" size={24} />
+                        <div>
+                            <p className="font-bold text-slate-800">Privacidad Total</p>
+                            <p className="text-sm text-slate-500">Tus conversaciones son privadas y seguras.</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl">
+                        <Brain className="text-indigo-500 shrink-0" size={24} />
+                        <div>
+                            <p className="font-bold text-slate-800">Análisis Inteligente</p>
+                            <p className="text-sm text-slate-500">Detectamos patrones emocionales en tiempo real.</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="consent-item">
-                    <AlertTriangle size={20} className="text-warning" />
-                    <p><strong>Urgencias:</strong> Si sientes que estás en peligro inmediato, llama al 113 (Perú) o acude al centro de salud más cercano.</p>
-                </div>
-            </div>
-            
-            <div className="action-row-wizard">
-                <button className="btn-secondary" onClick={() => navigate('/')}>Volver</button>
-                <button className="btn-primary" onClick={() => setStep(1)}>Acepto y Comenzar <ArrowRight size={18} /></button>
+
+                <button 
+                    onClick={() => setStep(1)}
+                    className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-lg hover:bg-indigo-700 transition-all flex justify-center items-center gap-2 shadow-lg shadow-indigo-200"
+                >
+                    Comenzar Conversación <ArrowRight size={20} />
+                </button>
             </div>
         </div>
     );
 
-    const renderQuestionnaire = (questions: string[], answers: number[], onChange: (i: number, v: number) => void, title: string, icon: React.ReactNode, nextStep: number) => (
-        <div className="card-professional animate-fade-in-up">
-            <div className="assessment-header-wizard">
-                <div className="icon-box">{icon}</div>
-                <div className="text-box">
-                    <h2>{title}</h2>
-                    <p>Responde con sinceridad basándote en las últimas 2 semanas.</p>
+    const renderChat = () => (
+        <div className="max-w-3xl mx-auto h-[80vh] flex flex-col bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden my-4 animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="px-6 py-4 bg-indigo-600 text-white flex items-center gap-3">
+                <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Bot size={24} />
+                </div>
+                <div>
+                    <h3 className="font-bold">Asistente MindGuard</h3>
+                    <p className="text-xs text-indigo-100 flex items-center gap-1">
+                        <span className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse"></span> IA Activa
+                    </p>
                 </div>
             </div>
-            
-            <div className="modern-questions-list">
-                {questions.map((q, i) => (
-                    <div key={i} className={`modern-question-card ${answers[i] !== -1 ? 'answered' : ''}`}>
-                        <p className="question-text">{i + 1}. {q}</p>
-                        <div className="modern-options-group">
-                            {RESPONSE_OPTIONS.map(opt => (
-                                <button 
-                                    key={opt.value}
-                                    type="button"
-                                    className={`modern-option-btn color-${opt.value} ${answers[i] === opt.value ? 'selected' : ''}`}
-                                    onClick={() => onChange(i, opt.value)}
-                                >
-                                    <span className="dot"></span>
-                                    <span className="label">{opt.label}</span>
-                                </button>
-                            ))}
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+                {messages.map((m, i) => (
+                    <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-in slide-in-from-bottom-2`}>
+                        <div className={`flex gap-3 max-w-[80%] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${m.role === 'assistant' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                {m.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
+                            </div>
+                            <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                                m.role === 'assistant' 
+                                ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' 
+                                : 'bg-indigo-600 text-white rounded-tr-none'
+                            }`}>
+                                {m.content}
+                            </div>
                         </div>
                     </div>
                 ))}
+                {isTyping && (
+                    <div className="flex justify-start animate-in fade-in">
+                        <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 flex gap-1">
+                            <span className="h-2 w-2 bg-slate-300 rounded-full animate-bounce"></span>
+                            <span className="h-2 w-2 bg-slate-300 rounded-full animate-bounce delay-75"></span>
+                            <span className="h-2 w-2 bg-slate-300 rounded-full animate-bounce delay-150"></span>
+                        </div>
+                    </div>
+                )}
+                {loadingResult && (
+                    <div className="flex flex-col items-center justify-center py-8 text-indigo-600 gap-4">
+                        <RefreshCw className="animate-spin" size={32} />
+                        <p className="text-sm font-medium">Analizando patrones emocionales...</p>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
             </div>
 
-            <div className="action-row-wizard">
-                <button className="btn-secondary" onClick={() => setStep(step - 1)}><ArrowLeft size={18} /> Anterior</button>
-                <button 
-                    className="btn-primary" 
-                    onClick={() => setStep(nextStep)}
-                    disabled={!isStepValid()}
-                >
-                    Continuar <ArrowRight size={18} />
-                </button>
-            </div>
-        </div>
-    );
-
-    const renderDiary = () => (
-        <div className="card-professional animate-fade-in-up">
-            <div className="assessment-header-wizard">
-                <div className="icon-box bg-purple-light"><MessageSquare size={24} className="text-purple" /></div>
-                <div className="text-box">
-                    <h2>Diario de Bienestar</h2>
-                    <p>Escribe libremente. La IA analizará el tono emocional para ayudarte mejor.</p>
+            {/* Input Area */}
+            <div className="p-4 bg-white border-t border-slate-100">
+                <div className="relative flex items-center">
+                    <textarea 
+                        rows={1}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
+                        placeholder="Escribe tu respuesta aquí..."
+                        className="w-full p-4 pr-16 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none resize-none text-sm"
+                    />
+                    <button 
+                        onClick={handleSendMessage}
+                        disabled={!inputValue.trim() || isTyping || loadingResult}
+                        className="absolute right-2 p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:grayscale transition-all"
+                    >
+                        <Send size={20} />
+                    </button>
                 </div>
-            </div>
-            
-            <div className="diary-container">
-                <textarea 
-                    className="modern-diary-input"
-                    value={textInput} 
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Hoy me siento especialmente..."
-                />
-                <div className="char-count">{textInput.length} caracteres (mínimo 10)</div>
-            </div>
-
-            <div className="info-alert">
-                <Brain size={18} />
-                <p>Nuestro modelo <strong>Multilingual XLM-RoBERTa</strong> detectará patrones de malestar y palabras clave de riesgo.</p>
-            </div>
-
-            <div className="action-row-wizard">
-                <button className="btn-secondary" onClick={() => setStep(2)}><ArrowLeft size={18} /> Anterior</button>
-                <button 
-                    className="btn-primary btn-pulse" 
-                    onClick={handleSubmit} 
-                    disabled={loading || !isStepValid()}
-                >
-                    {loading ? 'Analizando...' : 'Finalizar y Ver Resultados'} <Save size={18} />
-                </button>
+                <p className="text-[10px] text-slate-400 mt-2 text-center">
+                    Tus mensajes son procesados localmente para garantizar tu privacidad.
+                </p>
             </div>
         </div>
     );
 
     const renderResult = () => {
         const risk = result.nivelRiesgo.toLowerCase();
-        const isHighRisk = result.has_high_risk;
+        const analysis = result.analisis_detallado || {};
         
         return (
-            <div className="card-professional result-view animate-fade-in">
-                {isHighRisk && (
-                    <div className="crisis-alert-banner animate-pulse">
-                        <AlertTriangle size={32} className="text-white" />
-                        <div>
-                            <h4>Detección de Riesgo Prioritario</h4>
-                            <p>Tus respuestas sugieren que estás pasando por un momento crítico. Por favor, llama a la Línea 113 (opción 5) en Perú para apoyo inmediato gratuito.</p>
+            <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in zoom-in-95 duration-500">
+                <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden">
+                    {/* Header del Resultado */}
+                    <div className={`p-8 text-center text-white ${
+                        result.has_high_risk ? 'bg-rose-600' : 
+                        risk === 'grave' ? 'bg-rose-600' :
+                        risk === 'moderado' ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}>
+                        <div className="inline-flex p-4 bg-white/20 rounded-full mb-4">
+                            {result.has_high_risk ? <AlertTriangle size={48} /> : <Sparkles size={48} />}
+                        </div>
+                        <h1 className="text-3xl font-extrabold mb-2">Interpretación Emocional</h1>
+                        <p className="text-white/90 text-lg uppercase font-bold tracking-wider">{analysis.riesgo_emocional ? `Riesgo: ${analysis.riesgo_emocional}` : result.nivelRiesgo}</p>
+                    </div>
+
+                    <div className="p-8">
+                        <div className="grid md:grid-cols-2 gap-8">
+                            {/* Análisis IA */}
+                            <div className="space-y-6">
+                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
+                                        <Bot className="text-indigo-600" /> Mi Observación
+                                    </h3>
+                                    <p className="text-slate-700 text-sm leading-relaxed mb-4">
+                                        {analysis.interpretacion || result.resultadoIA}
+                                    </p>
+                                    
+                                    {analysis.factores_detectados && (
+                                        <div className="mt-4">
+                                            <p className="text-xs font-bold text-slate-500 mb-2">PATRONES DETECTADOS:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {analysis.factores_detectados.map((f: string, i: number) => (
+                                                    <span key={i} className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] text-slate-600 font-bold uppercase tracking-tighter">
+                                                        • {f}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Recomendación y Plan */}
+                            <div className="space-y-6">
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <HeartPulse className="text-rose-500" /> Recomendación Personalizada
+                                </h3>
+                                
+                                <div className="p-6 bg-indigo-50 text-indigo-800 rounded-3xl border border-indigo-100">
+                                    <p className="text-sm leading-relaxed italic">
+                                        "{analysis.recomendacion || "Hoy intenta enfocar tu atención en algo físico y presente para descansar mentalmente."}"
+                                    </p>
+                                </div>
+
+                                {result.has_high_risk && (
+                                    <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                                        <p className="font-bold text-rose-700 text-sm mb-1">Apoyo Inmediato</p>
+                                        <p className="text-xs text-rose-600">Llama al 113 (Opción 5) - Línea gratuita de salud mental.</p>
+                                        <a href="tel:113" className="mt-2 block bg-rose-600 text-white text-center py-2 rounded-lg text-sm font-bold">Llamar 113 Ahora</a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Gráfico Simple de Emociones */}
+                        {analysis.emociones_detectadas && (
+                            <div className="mt-8 pt-8 border-t border-slate-100">
+                                <h3 className="text-sm font-bold text-slate-400 mb-4 uppercase text-center tracking-widest">Niveles Detectados</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    {Object.entries(analysis.emociones_detectadas).map(([emo, val]: [string, any]) => (
+                                        <div key={emo} className="text-center">
+                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-2">
+                                                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${val * 100}%` }}></div>
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase">{emo.replace('_', ' ')}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-12 flex flex-col md:flex-row gap-4 justify-center">
+                            <button onClick={() => navigate('/')} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all">
+                                Ir al Dashboard
+                            </button>
+                            <button onClick={() => window.print()} className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 transition-all">
+                                Guardar Reporte
+                            </button>
                         </div>
                     </div>
-                )}
-
-                <div className="result-hero">
-                    {isHighRisk ? <AlertTriangle size={64} className="text-error" /> : <CheckCircle size={64} className="text-success" />}
-                    <h1>Evaluación Finalizada</h1>
-                    <div className={`risk-hero-badge risk-${risk.replace(' ', '-')}`}>
-                        {result.nivelRiesgo}
-                    </div>
-                </div>
-
-                <div className="result-sections-grid">
-                    <div className="result-main-card">
-                        <h3><Brain size={20} /> Análisis Cognitivo-Emocional</h3>
-                        <p className="ai-feedback">{result.resultadoIA}</p>
-                        
-                        <div className="ethical-notice-inline">
-                            <Info size={16} />
-                            <p>Este análisis es una herramienta de apoyo, no sustituye la consulta con un psicólogo colegiado.</p>
-                        </div>
-                    </div>
-
-                    <div className="therapeutic-resources">
-                        <h3><HeartPulse size={20} /> Recursos de Bienestar</h3>
-                        <p>Basado en tu estado actual, hemos seleccionado estos recursos para ti:</p>
-                        
-                        <div className="resource-chips-grid">
-                            {isHighRisk ? (
-                                <>
-                                    <div className="res-chip highlight-red">
-                                        <span className="icon">📞</span>
-                                        <div>
-                                            <strong>Línea de Vida (113)</strong>
-                                            <a href="tel:113" className="emergency-link">Llamar Ahora</a>
-                                        </div>
-                                    </div>
-                                    <div className="res-chip">
-                                        <span className="icon">🏥</span>
-                                        <div>
-                                            <strong>Centros Comunitarios</strong>
-                                            <a href="https://www.gob.pe/institucion/minsa/campañas/716-centros-de-salud-mental-comunitaria" target="_blank" rel="noreferrer">Ver Mapa</a>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="res-chip">
-                                        <span className="icon">🧘</span>
-                                        <div>
-                                            <strong>Respiración Cuadrada</strong>
-                                            <button onClick={() => navigate('/exercise')} className="text-link">Empezar Ejercicio</button>
-                                        </div>
-                                    </div>
-                                    <div className="res-chip">
-                                        <span className="icon">📚</span>
-                                        <div>
-                                            <strong>Lectura Sugerida</strong>
-                                            <a href="https://papsicologia.es/recursos-autoayuda/" target="_blank" rel="noreferrer">Guías TCC</a>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="action-row center-aligned">
-                    <button className="btn-secondary" onClick={() => navigate('/')}>Ir al Panel</button>
-                    <button className="btn-primary" onClick={() => window.print()}>Descargar Reporte Clínico</button>
                 </div>
             </div>
         );
     };
 
     return (
-        <div className="container assessment-wizard-container">
-            <div className="wizard-stepper">
-                {['Inicio', 'Depresión', 'Ansiedad', 'Diario', 'Resultado'].map((label, i) => (
-                    <div key={i} className={`stepper-item ${step === i ? 'current' : ''} ${step > i ? 'done' : ''}`}>
-                        <div className="step-num">{step > i ? <CheckCircle size={16} /> : i + 1}</div>
-                        <span className="step-label">{label}</span>
-                    </div>
-                ))}
-            </div>
-
-            <div className="wizard-content">
-                {step === 0 && renderConsent()}
-                {step === 1 && renderQuestionnaire(PHQ9_QUESTIONS, phq9Answers, handlePhq9Change, "Cuestionario PHQ-9", <HeartPulse size={24} className="text-blue" />, 2)}
-                {step === 2 && renderQuestionnaire(GAD7_QUESTIONS, gad7Answers, handleGad7Change, "Cuestionario GAD-7", <Brain size={24} className="text-orange" />, 3)}
-                {step === 3 && renderDiary()}
-                {step === 4 && result && renderResult()}
-            </div>
+        <div className="min-h-screen bg-slate-50/50 pb-12">
+            {step === 0 && renderConsent()}
+            {step === 1 && renderChat()}
+            {step === 2 && result && renderResult()}
         </div>
     );
 };
-
-const ActivityIcon = ({ size, className }: { size: number, className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-    </svg>
-);
 
 export default Assessment;

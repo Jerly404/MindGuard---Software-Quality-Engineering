@@ -80,8 +80,10 @@ class TransaccionMock(Base):
     __tablename__ = "TransaccionMock"
     id = Column(Integer, primary_key=True, index=True)
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
+    id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=True) # A quién se le pagó
     monto = Column(Float, nullable=False)
+    metodo_pago = Column(String(50), default="tarjeta") # paypal, yape, tarjeta
     fecha = Column(DateTime, default=datetime.utcnow)
     estado = Column(String(50), default="completado") # pendiente, completado, fallido
     
-    usuario = relationship("Usuario")
+    usuario = relationship("Usuario", foreign_keys=[id_usuario])
