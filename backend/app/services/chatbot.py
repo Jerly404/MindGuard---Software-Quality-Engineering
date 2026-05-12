@@ -1,72 +1,89 @@
-from google import genai
-from google.genai import types
-from typing import List, Dict
+from groq import Groq
+from typing import List, Dict, Optional
 from app.core.config import settings
+import json
 
 class MentalHealthChatbot:
     def __init__(self):
-        self.api_key = settings.GOOGLE_API_KEY
+        self.api_key = settings.GROQ_API_KEY
         if self.api_key:
-            self.client = genai.Client(api_key=self.api_key)
-            self.model_id = 'gemini-flash-latest' 
+            self.client = Groq(api_key=settings.GROQ_API_KEY)
+            self.model_id = 'llama-3.3-70b-versatile'
         else:
             self.client = None
-            print("Warning: GOOGLE_API_KEY not found. Chatbot will use fallback logic.")
 
-        self.system_prompt = (
-            "Eres MindGuard AI, un asistente virtual especializado en apoyo emocional y "
-            "primeros auxilios psicológicos. Tu personalidad es la de un psicólogo clínico "
-            "empático, cálido y profesional. Utilizas técnicas de escucha activa, validación "
-            "emocional y preguntas abiertas para ayudar al usuario a explorar sus sentimientos.\n\n"
-            "REGLAS CRÍTICAS:\n"
-            "1. NO des diagnósticos médicos definitivos.\n"
-            "2. Si detectas riesgo de autolesión o suicidio, prioriza la seguridad y sugiere contactar a emergencias (Línea 113 en Perú).\n"
-            "3. Mantén respuestas concisas pero profundas (máximo 3 párrafos).\n"
-            "4. Tu objetivo es guiar una conversación fluida para entender el estado del usuario (ánimo, energía, sueño, ansiedad).\n"
-            "5. NO repitas patrones mecánicos. Responde directamente a lo que el usuario dice."
+        # Definición del test PHQ-4 (4 preguntas clave)
+        self.questions = [
+            {
+                "id": "mood",
+                "text": "¿Con qué frecuencia te has sentido triste, deprimido o sin esperanza en las últimas 2 semanas?",
+                "options": ["Para nada", "Varios días", "Más de la mitad de los días", "Casi todos los días"]
+            },
+            {
+                "id": "interest",
+                "text": "¿Has sentido poco interés o placer en hacer las cosas?",
+                "options": ["Para nada", "Varios días", "Más de la mitad de los días", "Casi todos los días"]
+            },
+            {
+                "id": "anxiety",
+                "text": "¿Te has sentido nervioso, ansioso o con los nervios de punta?",
+                "options": ["Para nada", "Varios días", "Más de la mitad de los días", "Casi todos los días"]
+            },
+            {
+                "id": "worry",
+                "text": "¿No has podido dejar de preocuparte o controlar la preocupación?",
+                "options": ["Para nada", "Varios días", "Más de la mitad de los días", "Casi todos los días"]
+            }
+        ]
+
+    def get_greeting(self) -> Dict:
+        return {
+            "response": "¡Hola! Soy MindGuard 🌙. Antes de conversar, hagamos un breve chequeo de tu estado hoy. ¿Empezamos?",
+            "options": ["Sí, adelante", "Ahora no, solo quiero hablar"]
+        }
+
+    async def get_response(self, messages: List[Dict[str, str]], step_name: str = None) -> Dict:
+        # Contar cuántas respuestas ha dado el usuario para saber en qué pregunta vamos
+        user_responses = [m for m in messages if m["role"] == "user"]
+        num_responses = len(user_responses)
+
+        # Si el usuario dijo que "Ahora no", pasamos a modo libre
+        if any("Ahora no" in m["content"] for m in user_responses):
+            return await self._get_free_response(messages)
+
+        # Si estamos en el proceso del test (4 preguntas)
+        if num_responses <= len(self.questions):
+            # Si el usuario acaba de decir "Sí, adelante" o es el inicio
+            idx = num_responses - 1 if num_responses > 0 else 0
+            if idx < len(self.questions):
+                q = self.questions[idx]
+                return {
+                    "response": q["text"],
+                    "options": q["options"]
+                }
+        
+        # Si ya terminó las preguntas, pasamos a modo psicólogo
+        return await self._get_free_response(messages)
+
+    async def _get_free_response(self, messages: List[Dict[str, str]]) -> Dict:
+        prompt = (
+            "Eres MindGuard, un psicólogo clínico experto. Has terminado el triaje inicial. "
+            "Ahora ofrece apoyo empático, consejos de salud mental o recomendaciones (música/cine). "
+            "Sé breve (máximo 3 líneas) y profesional."
         )
-
-    def get_greeting(self) -> str:
-        return (
-            "Hola, soy MindGuard 🌙\n"
-            "Este es un espacio seguro donde podemos conversar sobre cómo te has sentido últimamente. "
-            "No hay respuestas correctas o incorrectas, solo tu verdad.\n\n"
-            "¿Cómo te encuentras el día de hoy?"
-        )
-
-    async def get_response(self, messages: List[Dict[str, str]], step_name: str = None) -> str:
-        if not self.client:
-            return "Lo siento, mi conexión con el motor de IA no está activa. ¿Podrías intentar más tarde?"
-
         try:
-            # Convertir historial al formato de google-genai
-            contents = []
-            
-            # El primer mensaje debe ser el system prompt o incluirlo en el contexto
-            # En la nueva SDK, se puede pasar como parte de la configuración o del primer mensaje
-            
+            history = [{"role": "system", "content": prompt}]
             for m in messages:
-                role = "user" if m["role"] == "user" else "model"
-                contents.append(types.Content(role=role, parts=[types.Part(text=m["content"])]))
+                history.append({"role": m["role"], "content": m["content"]})
             
-            # Configuración con el system prompt
-            config = types.GenerateContentConfig(
-                system_instruction=self.system_prompt,
-                temperature=0.7,
-            )
-            
-            response = await self.client.aio.models.generate_content(
+            completion = self.client.chat.completions.create(
                 model=self.model_id,
-                contents=contents,
-                config=config
+                messages=history,
+                temperature=0.7,
+                max_tokens=250
             )
-            
-            return response.text
-        except Exception as e:
-            return "Parece que tengo dificultades para procesar esto ahora. ¿Me podrías contar un poco más con otras palabras?"
-
-    def analyze_session(self, messages: List[Dict[str, str]]):
-        full_text = " ".join([m["content"] for m in messages if m["role"] == "user"])
-        return full_text
+            return {"response": completion.choices[0].message.content, "options": []}
+        except:
+            return {"response": "Entiendo. Cuéntame más sobre eso...", "options": []}
 
 chatbot_service = MentalHealthChatbot()

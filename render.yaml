@@ -1,0 +1,36 @@
+services:
+  # Backend
+  - type: web
+    name: mindguard-backend
+    env: python
+    region: ohio
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && export PYTHONPATH=$PYTHONPATH:. && python reset_db_final.py && gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./mindguard.db # Para prueba gratis rápida
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GOOGLE_API_KEY
+        sync: false # Lo pondrás manual en el dashboard de Render
+      - key: GROQ_API_KEY
+        sync: false
+
+  # Frontend
+  - type: web
+    name: mindguard-frontend
+    env: static
+    region: ohio
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: mindguard-backend
+          type: web
+          property: host
+    routingRules:
+      - route: /*
+        rewritePath: /index.html
