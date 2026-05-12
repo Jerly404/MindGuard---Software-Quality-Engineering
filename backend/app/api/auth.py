@@ -114,7 +114,7 @@ async def create_professional(
     current_user: Usuario = Depends(deps.get_current_user)
 ) -> Any:
     """Permite a un administrador crear una cuenta de profesional."""
-    if current_user.rol != "administrador":
+    if current_user.rol not in ["admin", "administrador"]:
         raise HTTPException(
             status_code=403,
             detail="No tienes permisos suficientes para realizar esta acción.",
@@ -133,7 +133,9 @@ async def create_professional(
         email=user_in.email,
         password_hash=security.get_password_hash(user_in.password),
         nombre=user_in.nombre,
-        rol="profesional", # Forzamos el rol de profesional
+        rol="profesional",
+        colegiatura=user_in.colegiatura,
+        especialidad=user_in.especialidad
     )
     db.add(db_obj)
     await db.commit()

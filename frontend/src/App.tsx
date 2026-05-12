@@ -30,8 +30,8 @@ const HomeRedirect = () => {
     const user = authApi.getCurrentUser();
     if (!user) return <Navigate to="/login" replace />;
     
-    // Roles: 'usuario', 'paciente', 'profesional', 'administrador'
-    if (user.rol === 'administrador') return <AdminDashboard />;
+    // Corregido: Aceptar 'admin' o 'administrador'
+    if (user.rol === 'admin' || user.rol === 'administrador') return <AdminDashboard />;
     if (user.rol === 'profesional') return <ProfessionalDashboard />;
     return <Dashboard />; 
 };
@@ -62,9 +62,25 @@ function App() {
               } 
             />
             <Route 
+              path="/admin-dashboard" 
+              element={
+                <ProtectedRoute roles={['admin', 'administrador']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/professional-dashboard" 
+              element={
+                <ProtectedRoute roles={['profesional']}>
+                  <ProfessionalDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/assessment" 
               element={
-                <ProtectedRoute roles={['usuario', 'paciente']}>
+                <ProtectedRoute roles={['usuario', 'paciente', 'admin']}>
                   <Assessment />
                 </ProtectedRoute>
               } 

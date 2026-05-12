@@ -9,8 +9,9 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        // Limpiar toda la memoria local y forzar recarga para resetear React Query
         onLogout();
-        navigate('/login');
+        window.location.href = '/login'; 
     };
 
     return (

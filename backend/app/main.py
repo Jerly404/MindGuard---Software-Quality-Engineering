@@ -9,10 +9,7 @@ from app.api import auth, assessments, premium
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # En producción las migraciones se corren externas o aquí
-    # Por ahora solo iniciamos la app
     yield
-    # Clean up (if needed)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -20,21 +17,18 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Set all CORS enabled origins
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://[::1]:5173",
-]
-
+# Configuración de CORS ultra-permisiva DEBE ir antes de las rutas
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
+
+print("\n" + "="*50)
+print("SISTEMA MINDGUARD CARGADO - CORS CONFIGURADO - RUTAS ACTIVAS")
+print("="*50 + "\n")
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(assessments.router, prefix=f"{settings.API_V1_STR}/assessments", tags=["assessments"])
@@ -43,7 +37,3 @@ app.include_router(premium.router, prefix=f"{settings.API_V1_STR}/premium", tags
 @app.get("/")
 def root():
     return {"message": "Welcome to MindGuard IA API"}
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}

@@ -8,8 +8,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-super-secret-key-for-dev-only" # Change in production
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    SQLALCHEMY_DATABASE_URL: str = "sqlite+aiosqlite:///./mindguard.db"
+    SQLALCHEMY_DATABASE_URL: str = Field(
+        "sqlite+aiosqlite:///./mindguard.db",
+        env="DATABASE_URL"
+    )
     GOOGLE_API_KEY: Optional[str] = Field(None, env="GOOGLE_API_KEY")
+    GROQ_API_KEY: Optional[str] = Field(None, env="GROQ_API_KEY")
 
     # Email settings
     SMTP_TLS: bool = True

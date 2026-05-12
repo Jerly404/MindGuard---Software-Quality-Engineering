@@ -36,14 +36,18 @@ const AdminDashboard: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await authApi.createProfessional({
+            const professionalData = {
                 nombre: newPro.nombre,
                 email: newPro.email,
                 password: newPro.password,
-                rol: "profesional"
-            });
+                rol: "profesional",
+                colegiatura: newPro.colegiatura,
+                especialidad: newPro.especialidad
+            };
+            
+            const response = await authApi.createProfessional(professionalData);
 
-            // Actualizar la lista local (simulado ya que no tenemos endpoint de listado real aún)
+            // Actualizar la lista local
             const createdPro = {
                 id: response.data.id,
                 nombre: newPro.nombre,

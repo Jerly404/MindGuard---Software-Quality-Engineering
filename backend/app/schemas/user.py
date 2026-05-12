@@ -5,6 +5,8 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     nombre: Optional[str] = None
     rol: Optional[str] = "usuario"
+    colegiatura: Optional[str] = None
+    especialidad: Optional[str] = None
 
 class UserCreate(UserBase):
     email: EmailStr

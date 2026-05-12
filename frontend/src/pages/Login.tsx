@@ -12,11 +12,8 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        const formData = new FormData();
-        formData.append('username', email);
-        formData.append('password', password);
         try {
-            const response = await authApi.login(formData);
+            const response = await authApi.login({ username: email, password: password });
             localStorage.setItem('token', response.data.access_token);
             onLogin();
             navigate('/');

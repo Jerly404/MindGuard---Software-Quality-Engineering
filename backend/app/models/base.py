@@ -13,6 +13,8 @@ class Usuario(Base):
     password_hash = Column(String(255), nullable=False)
     rol = Column(String(50))
     twoFactorEnabled = Column(Boolean, default=False)
+    colegiatura = Column(String(50), nullable=True) # Nuevo
+    especialidad = Column(String(100), nullable=True) # Nuevo
     
     evaluaciones = relationship("Evaluacion", back_populates="usuario")
 
@@ -87,3 +89,17 @@ class TransaccionMock(Base):
     estado = Column(String(50), default="completado") # pendiente, completado, fallido
     
     usuario = relationship("Usuario", foreign_keys=[id_usuario])
+
+class Cita(Base):
+    __tablename__ = "Cita"
+    id = Column(Integer, primary_key=True, index=True)
+    id_paciente = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
+    id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
+    fecha_cita = Column(DateTime, nullable=False)
+    link_reunion = Column(String(255), nullable=True)
+    mensaje_seguimiento = Column(Text, nullable=True)
+    estado = Column(String(20), default="programada") # programada, completada, cancelada
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+
+    paciente = relationship("Usuario", foreign_keys=[id_paciente])
+    profesional = relationship("Usuario", foreign_keys=[id_profesional])

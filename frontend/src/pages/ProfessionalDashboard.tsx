@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
     Users, FileText, Activity, Search, AlertCircle, 
     CheckCircle2, Clock, Filter, ArrowUpRight, ChevronRight,
-    Wallet, TrendingUp, X
+    Wallet, TrendingUp, X, Video
 } from 'lucide-react';
 import { premiumApi } from '../services/api';
 
@@ -14,10 +14,16 @@ const ProfessionalDashboard = () => {
     const [filter, setFilter] = useState<'todos' | 'riesgo-alto' | 'estable'>('todos');
     
     // Wallet & History States
-    const [earnings, setEarnings] = useState({ total_acumulado: 0, moneda: 'PEN' });
+    const [earnings, setEarnings] = useState<any>({ total_ganado: 0, moneda: 'USD' });
     const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
     const [patientHistory, setPatientHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+
+    // Appointment States
+    const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+    const [appointmentDate, setAppointmentDate] = useState('');
+    const [appointmentMsg, setAppointmentMsg] = useState('');
+    const [scheduling, setScheduling] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -52,6 +58,27 @@ const ProfessionalDashboard = () => {
             console.error("Error fetching dashboard data", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSchedule = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedPatient || !appointmentDate) return;
+        setScheduling(true);
+        try {
+            await premiumApi.createAppointment({
+                id_paciente: selectedPatient.id,
+                fecha_cita: appointmentDate,
+                mensaje_seguimiento: appointmentMsg
+            });
+            alert("¡Teleconsulta programada con éxito!");
+            setShowAppointmentModal(false);
+            setAppointmentDate('');
+            setAppointmentMsg('');
+        } catch (error) {
+            alert("Error al programar la cita.");
+        } finally {
+            setScheduling(false);
         }
     };
 
@@ -93,7 +120,9 @@ const ProfessionalDashboard = () => {
                     </div>
                     <div>
                         <span className="block text-xs font-bold text-indigo-100 uppercase tracking-widest">Mi Billetera</span>
-                        <span className="text-2xl font-black">{earnings.moneda} {earnings.total_acumulado.toFixed(2)}</span>
+                        <span className="text-2xl font-black">
+                            {earnings?.moneda || 'USD'} {(earnings?.total_ganado || 0).toFixed(2)}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -183,13 +212,22 @@ const ProfessionalDashboard = () => {
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={() => handleViewHistory(patient)}
-                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-indigo-600 transition-colors"
-                            >
-                                <FileText size={18} />
-                                VER HISTORIAL COMPLETO
-                            </button>
+                            <div className="flex flex-col gap-3">
+                                <button 
+                                    onClick={() => handleViewHistory(patient)}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
+                                >
+                                    <FileText size={18} />
+                                    VER HISTORIAL COMPLETO
+                                </button>
+                                <button 
+                                    onClick={() => { setSelectedPatient(patient); setShowAppointmentModal(true); }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-bold text-sm hover:bg-indigo-100 transition-colors border border-indigo-100"
+                                >
+                                    <Video size={18} />
+                                    AGENDAR TELECONSULTA
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -256,6 +294,53 @@ const ProfessionalDashboard = () => {
                             <button onClick={() => setSelectedPatient(null)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all">
                                 Cerrar Historial
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Appointment Modal */}
+            {showAppointmentModal && (
+                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl animate-scale-in">
+                        <div className="p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-black text-slate-900">Programar Cita</h3>
+                                <button onClick={() => setShowAppointmentModal(false)} className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"><X size={20}/></button>
+                            </div>
+                            
+                            <p className="text-sm text-slate-500 mb-6">
+                                Programando con: <span className="font-bold text-indigo-600">{selectedPatient?.nombre}</span>
+                            </p>
+
+                            <form onSubmit={handleSchedule} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Fecha y Hora</label>
+                                    <input 
+                                        type="datetime-local" 
+                                        className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500"
+                                        value={appointmentDate}
+                                        onChange={(e) => setAppointmentDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Mensaje de Seguimiento</label>
+                                    <textarea 
+                                        placeholder="Ej: Hola, me gustaría conversar sobre tu última evaluación..."
+                                        className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 min-h-[100px] resize-none"
+                                        value={appointmentMsg}
+                                        onChange={(e) => setAppointmentMsg(e.target.value)}
+                                    />
+                                </div>
+                                <button 
+                                    disabled={scheduling}
+                                    type="submit"
+                                    className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                                >
+                                    {scheduling ? 'Programando...' : 'Confirmar y Notificar'}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

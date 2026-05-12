@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -20,11 +20,23 @@ export const premiumApi = {
         api.post('/premium/payment/mock', { id_profesional, monto, metodo }),
     getAssignedPatients: () => api.get('/premium/assigned-patients'),
     getEarnings: () => api.get('/premium/earnings'),
-    getPatientHistory: (patientId: number) => api.get(`/premium/patient-history/${patientId}`)
+    getPatientHistory: (patientId: number) => api.get(`/premium/patient-history/${patientId}`),
+    // Citas
+    createAppointment: (data: { id_paciente: number, fecha_cita: string, mensaje_seguimiento?: string }) => 
+        api.post('/premium/appointments', data),
+    getMyAppointments: () => api.get('/premium/appointments/me'),
 };
 
 export const authApi = {
-    login: (formData: FormData) => api.post('/auth/login/access-token', formData),
+    // Encapsulando la transformación de datos (Single Responsibility Principle)
+    login: (credentials: { username: string, password: string }) => {
+        const params = new URLSearchParams();
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
+        return api.post('/auth/login/access-token', params, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+    },
     signup: (userData: any) => api.post('/auth/signup', userData),
     createProfessional: (userData: any) => api.post('/auth/create-professional', userData),
     getCurrentUser: () => {

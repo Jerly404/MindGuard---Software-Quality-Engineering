@@ -14,12 +14,11 @@ const Signup: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
         e.preventDefault();
         setError('');
         try {
-            await authApi.signup({ email, password, nombre });
-            // auto login or redirect to login
-            const formData = new FormData();
-            formData.append('username', email);
-            formData.append('password', password);
-            const response = await authApi.login(formData);
+            await authApi.signup({ email, password, nombre, rol: 'usuario' });
+            
+            // Login automático corregido
+            const response = await authApi.login({ username: email, password: password });
+            
             localStorage.setItem('token', response.data.access_token);
             onSignup();
             navigate('/');
