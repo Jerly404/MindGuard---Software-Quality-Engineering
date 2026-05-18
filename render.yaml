@@ -18,8 +18,9 @@ services:
         sync: false
 
   # Frontend
-  - type: static_site
+  - type: web
     name: mindguard-frontend
+    env: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
@@ -27,7 +28,7 @@ services:
         fromService:
           name: mindguard-backend
           type: web
-          property: host
+          property: url
     routes:
       - type: rewrite
         source: /*
