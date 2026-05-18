@@ -68,8 +68,8 @@ export const authApi = {
     },
     signup: (userData: any) => api.post('/auth/signup', userData),
     createProfessional: (userData: any) => api.post('/auth/create-professional', userData),
-    getUsers: () => api.get('/auth/users'),
-    deleteUser: (userId: number) => api.delete(`/auth/users/${userId}`),
+    getUsers: () => api.get('/auth/users/'),
+    deleteUser: (userId: number) => api.delete(`/auth/users/${userId}/`),
     getCurrentUser: () => {
         const token = localStorage.getItem('token');
         if (!token) return null;

@@ -142,7 +142,7 @@ async def create_professional(
     await db.refresh(db_obj)
     return db_obj
 
-@router.get("/users", response_model=List[User])
+@router.get("/users/", response_model=List[User])
 async def read_users(
     db: AsyncSession = Depends(deps.get_db),
     current_user: Usuario = Depends(deps.get_current_user)
@@ -154,7 +154,7 @@ async def read_users(
     result = await db.execute(select(Usuario))
     return result.scalars().all()
 
-@router.delete("/users/{user_id}", response_model=Msg)
+@router.delete("/users/{user_id}/", response_model=Msg)
 async def delete_user(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
