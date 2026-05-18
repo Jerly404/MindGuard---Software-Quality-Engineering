@@ -28,7 +28,7 @@ services:
         fromService:
           name: mindguard-backend
           type: web
-          property: url
+          property: host
     routes:
       - type: rewrite
         source: /*
