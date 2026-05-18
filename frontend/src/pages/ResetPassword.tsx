@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Lock, Key } from 'lucide-react';
 
+import api from '../services/api';
+
 const ResetPassword: React.FC = () => {
     const [token, setToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -17,7 +19,7 @@ const ResetPassword: React.FC = () => {
         setError('');
         setMessage('');
         try {
-            await axios.post(`http://localhost:8000/api/v1/auth/reset-password/`, {
+            await api.post(`/auth/reset-password/`, {
                 token: token,
                 new_password: newPassword
             });

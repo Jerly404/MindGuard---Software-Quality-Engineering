@@ -46,22 +46,28 @@ async def seed():
             await db.commit()
             print("Profesional de prueba creado.")
 
-        # 3. Datos de prueba
-        print("Insertando historial...")
-        for i in range(10):
-            fecha = datetime.utcnow() - timedelta(days=(10-i))
-            ev = Evaluacion(
-                id_usuario=user.id,
-                fecha=fecha,
-                phq9Score=random.randint(5, 20),
-                gad7Score=random.randint(5, 20),
-                nivelRiesgo=random.choice(["Leve", "Moderado", "Alto"]),
-                resultadoIA="Análisis de prueba generado automáticamente.",
-                has_high_risk=random.choice([True, False]),
-                notas_personales=f"Evaluación del día {fecha.date()}"
-            )
-            db.add(ev)
-        await db.commit()
+        # 3. Datos de prueba (Solo si el historial está vacío)
+        result_eval = await db.execute(select(Evaluacion).limit(1))
+        if not result_eval.scalars().first():
+            print("Insertando historial de prueba...")
+            for i in range(10):
+                fecha = datetime.utcnow() - timedelta(days=(10-i))
+                ev = Evaluacion(
+                    id_usuario=user.id,
+                    fecha=fecha,
+                    phq9Score=random.randint(5, 20),
+                    gad7Score=random.randint(5, 20),
+                    nivelRiesgo=random.choice(["Leve", "Moderado", "Alto"]),
+                    resultadoIA="Análisis de prueba generado automáticamente.",
+                    has_high_risk=random.choice([True, False]),
+                    notas_personales=f"Evaluación del día {fecha.date()}"
+                )
+                db.add(ev)
+            await db.commit()
+            print("Datos de prueba insertados.")
+        else:
+            print("La base de datos ya tiene datos, omitiendo seed.")
+        
         print("Todo listo.")
 
 async def main():

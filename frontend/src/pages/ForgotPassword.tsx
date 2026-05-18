@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../services/api';
 import { Mail, ArrowLeft } from 'lucide-react';
 
 const ForgotPassword: React.FC = () => {
@@ -16,7 +17,7 @@ const ForgotPassword: React.FC = () => {
         setError('');
         setMessage('');
         try {
-            await axios.post(`http://localhost:8000/api/v1/auth/password-recovery/${email}`);
+            await api.post(`/auth/password-recovery/${email}`);
             setMessage('Se ha enviado un correo con las instrucciones para recuperar tu contraseña.');
             setTimeout(() => navigate('/reset-password'), 3000);
         } catch (err: any) {
