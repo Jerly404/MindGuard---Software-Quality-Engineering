@@ -5,7 +5,7 @@ import {
     Zap, Sparkles, MessageSquare, ExternalLink, RefreshCw,
     X, DollarSign, Wallet
 } from 'lucide-react';
-import { assessmentApi, premiumApi } from '../services/api';
+import api, { assessmentApi, premiumApi } from '../services/api';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import yapeQR from '../assets/yape-qr.png';
 
@@ -21,7 +21,11 @@ const Dashboard: React.FC = () => {
 
     useEffect(() => {
         loadData();
-    }, []);
+        
+        // Reloj para apertura automática de citas
+        const timer = setInterval(checkAutoOpenLink, 30000); // Cada 30 seg
+        return () => clearInterval(timer);
+    }, [appointments]);
 
     const loadData = async () => {
         setLoading(true);
@@ -37,10 +41,26 @@ const Dashboard: React.FC = () => {
             setProfessionals(proRes.data);
             setAppointments(appoRes.data);
         } catch (e) {
-            console.error(e);
+            console.error("Dashboard Load Error:", e);
         } finally {
             setLoading(false);
         }
+    };
+
+    const checkAutoOpenLink = () => {
+        const now = new Date();
+        appointments.forEach(app => {
+            const appDate = new Date(app.fecha);
+            // Si la cita es hoy, ahora, y no han pasado más de 5 minutos
+            const diff = (appDate.getTime() - now.getTime()) / 60000;
+            
+            if (diff <= 0 && diff > -5 && app.estado === 'programada') {
+                console.log("¡Hora de la cita! Abriendo videoconferencia...");
+                window.open(app.link, '_blank');
+                // Opcional: Marcar localmente como abierta para que no se abra mil veces
+                app.estado = 'en_curso';
+            }
+        });
     };
 
     const handleYapePayment = async () => {
@@ -72,8 +92,9 @@ const Dashboard: React.FC = () => {
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Sección Principal: Último Estado */}
+                    {/* Sección Principal */}
                     <div className="lg:col-span-2 space-y-8">
+                        {/* Indicadores */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-slate-900 p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
@@ -95,7 +116,9 @@ const Dashboard: React.FC = () => {
                             <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
                                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Estado</p>
                                 <div className="flex flex-col gap-2">
-                                    <span className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-black uppercase w-fit">
+                                    <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase w-fit ${
+                                        lastEval?.nivelRiesgo === 'Alto' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                                    }`}>
                                         {lastEval?.nivelRiesgo || 'Estable'}
                                     </span>
                                     <p className="text-[10px] text-slate-400 font-medium leading-tight">Analizado por Motor IA v2.1</p>
@@ -103,42 +126,33 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Evolución Temporal (Mock Chart) */}
+                        {/* Evolución Temporal */}
                         <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                             <div className="flex justify-between items-center mb-10">
                                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
                                     <Activity className="text-indigo-600" /> Evolución Temporal
                                 </h3>
-                                <div className="flex gap-4 text-[10px] font-black uppercase">
-                                    <span className="flex items-center gap-2"><div className="h-2 w-2 bg-amber-500 rounded-full"></div> Ansiedad</span>
-                                    <span className="flex items-center gap-2"><div className="h-2 w-2 bg-indigo-600 rounded-full"></div> Depresión</span>
-                                </div>
                             </div>
                             <div className="h-48 flex items-end gap-1 border-b border-slate-100 pb-2 relative">
-                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                                    <div className="border-t border-slate-50 w-full h-0"></div>
-                                    <div className="border-t border-slate-50 w-full h-0"></div>
-                                    <div className="border-t border-slate-50 w-full h-0"></div>
-                                </div>
-                                <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-200 text-4xl font-black tracking-widest uppercase opacity-20">Analítica Activa</p>
+                                <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-100 text-4xl font-black tracking-widest uppercase">Analítica Activa</p>
                             </div>
                         </div>
 
-                        {/* Historial Reciente */}
+                        {/* Historial */}
                         <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                             <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-2">
                                 <History className="text-indigo-600" /> Historial Reciente
                             </h3>
                             <div className="space-y-4">
                                 {history.map((ev, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
+                                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
                                                 <Calendar size={18} />
                                             </div>
                                             <div>
                                                 <p className="text-xs font-bold text-slate-800">{new Date(ev.fecha).toLocaleDateString()}</p>
-                                                <p className="text-[10px] text-slate-500">{ev.resultadoIA.substring(0, 40)}...</p>
+                                                <p className="text-[10px] text-slate-500 truncate max-w-[200px]">{ev.resultadoIA}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -151,176 +165,91 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Sidebar: Premium y Citas */}
+                    {/* Sidebar */}
                     <div className="space-y-8">
-                        {/* Acceso Premium */}
+                        {/* Premium */}
                         {!assignment ? (
-                            <div className="bg-indigo-600 p-8 rounded-[3rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
-                                <div className="absolute -right-4 -top-4 p-8 opacity-20 group-hover:scale-110 transition-transform">
-                                    <Shield size={120} />
-                                </div>
-                                <h3 className="text-xl font-black mb-2 flex items-center gap-2">
-                                    Acceso Premium <Sparkles className="text-amber-400" size={20} />
-                                </h3>
-                                <p className="text-indigo-100 text-xs leading-relaxed mb-6">
-                                    Obtén una prueba gratuita de 2 días con supervisión de un profesional colegiado.
-                                </p>
-                                
+                            <div className="bg-indigo-600 p-8 rounded-[3rem] text-white shadow-xl">
+                                <h3 className="text-xl font-black mb-2 flex items-center gap-2">Acceso Premium <Sparkles className="text-amber-400" size={20} /></h3>
+                                <p className="text-indigo-100 text-xs mb-6">Prueba gratuita de 2 días con supervisión profesional.</p>
                                 <div className="space-y-3 mb-8">
                                     {professionals.map(pro => (
-                                        <div key={pro.id} className="bg-white/10 p-4 rounded-2xl flex items-center justify-between hover:bg-white/20 transition-all cursor-pointer border border-white/5" onClick={() => setSelectedPro(pro)}>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center font-bold">{pro.nombre[0]}</div>
-                                                <div>
-                                                    <p className="text-[11px] font-bold">{pro.nombre}</p>
-                                                    <p className="text-[9px] text-indigo-200">Psicólogo Colegiado</p>
-                                                </div>
-                                            </div>
+                                        <div key={pro.id} className="bg-white/10 p-4 rounded-2xl flex items-center justify-between" onClick={() => setSelectedPro(pro)}>
+                                            <p className="text-[11px] font-bold">{pro.nombre}</p>
                                             <button 
                                                 onClick={() => {setSelectedPro(pro); setIsPaymentModalOpen(true);}}
-                                                className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-amber-400 hover:text-white transition-all"
-                                            >
-                                                SUSCRIBIRSE
-                                            </button>
+                                                className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-amber-400 hover:text-white"
+                                            >SUSCRIBIRSE</button>
                                         </div>
                                     ))}
                                 </div>
-
-                                <button 
-                                    onClick={() => {setSelectedPro(professionals[0]); setIsPaymentModalOpen(true);}}
-                                    className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-amber-400 hover:text-white transition-all flex items-center justify-center gap-2"
-                                >
-                                    Iniciar Prueba Gratis <ArrowRight size={16} />
-                                </button>
                             </div>
                         ) : (
-                            <div className="bg-emerald-600 p-8 rounded-[3rem] text-white shadow-xl shadow-emerald-100">
-                                <div className="flex justify-between items-start mb-6">
-                                    <h3 className="text-xl font-black flex items-center gap-2">
-                                        Modo Premium <CheckCircle size={20} />
-                                    </h3>
-                                    <span className="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-black uppercase">Activo</span>
-                                </div>
-                                <div className="bg-white/10 p-4 rounded-2xl border border-white/10 mb-6">
-                                    <p className="text-[10px] text-emerald-100 uppercase font-bold mb-1">Supervisor Asignado</p>
+                            <div className="bg-emerald-600 p-8 rounded-[3rem] text-white shadow-xl">
+                                <h3 className="text-xl font-black mb-4 flex items-center gap-2">Modo Premium <CheckCircle size={20} /></h3>
+                                <div className="bg-white/10 p-4 rounded-2xl mb-4">
+                                    <p className="text-[10px] text-emerald-100 uppercase font-bold">Supervisor</p>
                                     <p className="text-sm font-black">{assignment.profesional}</p>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-bold uppercase text-emerald-100">Días restantes</p>
+                                    <p className="text-[10px] font-bold uppercase">Días restantes</p>
                                     <p className="text-2xl font-black">{Math.ceil(assignment.dias_restantes)}</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Mis Citas Próximas */}
+                        {/* Citas con Auto-Apertura */}
                         <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                             <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
                                 <Calendar className="text-indigo-600" /> Próximas Citas
                             </h3>
                             <div className="space-y-4">
                                 {appointments.length > 0 ? appointments.map(app => (
-                                    <div key={app.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
+                                    <div key={app.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <p className="text-[10px] font-bold text-indigo-600 uppercase">Sesión de Seguimiento</p>
-                                                <p className="text-xs font-black text-slate-800 mt-1">{new Date(app.fecha).toLocaleString()}</p>
+                                                <p className="text-xs font-black text-slate-800">{new Date(app.fecha).toLocaleString()}</p>
+                                                <p className="text-[9px] text-indigo-600 font-bold uppercase mt-1">Video-Sesión MindGuard</p>
                                             </div>
-                                            <span className="bg-indigo-100 text-indigo-600 px-2 py-1 rounded text-[8px] font-bold uppercase">Confirmada</span>
                                         </div>
-                                        <a 
-                                            href={app.link} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-                                        >
-                                            <ExternalLink size={12} /> Unirse a Reunión
+                                        <a href={app.link} target="_blank" rel="noreferrer" className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2">
+                                            <ExternalLink size={12} /> Abrir Reunión
                                         </a>
                                     </div>
-                                )) : (
-                                    <div className="py-6 text-center border-2 border-dashed border-slate-100 rounded-3xl">
-                                        <MessageSquare className="mx-auto text-slate-200 mb-2" size={32} />
-                                        <p className="text-[10px] text-slate-400 font-medium">No tienes citas programadas</p>
-                                    </div>
-                                )}
+                                )) : <p className="text-[10px] text-slate-400 text-center py-4">No tienes citas programadas</p>}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Modal de Pago Integral (Yape y PayPal) */}
+            {/* Modal Pago */}
             {isPaymentModalOpen && selectedPro && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="bg-indigo-600 p-8 text-white relative">
-                            <h3 className="text-2xl font-black">Activar MindGuard Premium</h3>
-                            <p className="text-indigo-100 text-sm mt-1">Suscripción para supervisión con {selectedPro.nombre}</p>
+                    <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
+                        <div className="bg-indigo-600 p-8 text-white">
+                            <h3 className="text-2xl font-black">Pagar con Yape o PayPal</h3>
                             <button onClick={() => setIsPaymentModalOpen(false)} className="absolute top-6 right-6 text-white/50 hover:text-white"><X size={28}/></button>
                         </div>
-                        
                         <div className="p-8">
                             <div className="flex gap-4 mb-8 bg-slate-100 p-2 rounded-2xl">
-                                <button 
-                                    onClick={() => setPaymentMethod('yape')}
-                                    className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-black text-xs transition-all ${paymentMethod === 'yape' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500'}`}
-                                >
-                                    <Wallet size={16} /> YAPE
-                                </button>
-                                <button 
-                                    onClick={() => setPaymentMethod('paypal')}
-                                    className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-black text-xs transition-all ${paymentMethod === 'paypal' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500'}`}
-                                >
-                                    <DollarSign size={16} /> PAYPAL
-                                </button>
+                                <button onClick={() => setPaymentMethod('yape')} className={`flex-1 py-3 rounded-xl font-black text-xs ${paymentMethod === 'yape' ? 'bg-white text-indigo-600' : 'text-slate-500'}`}>YAPE</button>
+                                <button onClick={() => setPaymentMethod('paypal')} className={`flex-1 py-3 rounded-xl font-black text-xs ${paymentMethod === 'paypal' ? 'bg-white text-indigo-600' : 'text-slate-500'}`}>PAYPAL</button>
                             </div>
-
                             {paymentMethod === 'yape' && (
-                                <div className="text-center space-y-4 animate-in fade-in duration-300">
-                                    <div className="bg-slate-50 p-6 rounded-3xl inline-block border-2 border-indigo-100 shadow-inner">
-                                        <img src={yapeQR} alt="Yape QR" className="w-48 h-48 mx-auto rounded-lg shadow-sm" />
-                                    </div>
-                                    <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                                        <p className="text-xs text-indigo-700 font-bold">Escanea el QR y envía S/ 20.00</p>
-                                        <p className="text-[10px] text-indigo-500 mt-1">Una vez enviado, presiona el botón inferior para activar.</p>
-                                    </div>
-                                    <button 
-                                        onClick={handleYapePayment}
-                                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
-                                    >
-                                        YA YAPEE, ACTIVAR AHORA
-                                    </button>
+                                <div className="text-center space-y-4">
+                                    <img src={yapeQR} alt="Yape QR" className="w-48 h-48 mx-auto" />
+                                    <button onClick={handleYapePayment} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black">YA YAPEE, ACTIVAR</button>
                                 </div>
                             )}
-
                             {paymentMethod === 'paypal' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 mb-6">
-                                        <p className="text-xs text-amber-700 font-bold text-center italic">"Pago seguro procesado por PayPal Inc."</p>
-                                    </div>
-                                    <PayPalScriptProvider options={{ "client-id": "test" }}> {/* CAMBIAR A TU CLIENT ID REAL */}
-                                        <PayPalButtons 
-                                            style={{ layout: "vertical", shape: "pill" }}
-                                            createOrder={(data, actions) => {
-                                                return actions.order.create({
-                                                    purchase_units: [{ amount: { value: "5.00" } }]
-                                                });
-                                            }}
-                                            onApprove={async (data, actions) => {
-                                                const res = await premiumApi.payAndAssign(selectedPro.id, 5, 'paypal');
-                                                alert(res.data.mensaje);
-                                                setIsPaymentModalOpen(false);
-                                                loadData();
-                                            }}
-                                        />
-                                    </PayPalScriptProvider>
-                                </div>
-                            )}
-
-                            {!paymentMethod && (
-                                <div className="py-12 text-center text-slate-400">
-                                    <Wallet size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p className="text-sm font-bold">Selecciona un método para continuar</p>
-                                </div>
+                                <PayPalScriptProvider options={{ "client-id": "test" }}>
+                                    <PayPalButtons style={{ layout: "vertical" }} onApprove={async () => {
+                                        await premiumApi.payAndAssign(selectedPro.id, 5, 'paypal');
+                                        setIsPaymentModalOpen(false);
+                                        loadData();
+                                    }} />
+                                </PayPalScriptProvider>
                             )}
                         </div>
                     </div>
