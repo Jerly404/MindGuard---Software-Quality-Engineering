@@ -1,6 +1,14 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+// Asegurar que la URL tenga protocolo y sufijo correcto si viene de Render
+if (API_URL && !API_URL.startsWith('http')) {
+    API_URL = `https://${API_URL}`;
+}
+if (API_URL && !API_URL.endsWith('/api/v1')) {
+    API_URL = API_URL.replace(/\/$/, '') + '/api/v1';
+}
 
 const api = axios.create({
     baseURL: API_URL,

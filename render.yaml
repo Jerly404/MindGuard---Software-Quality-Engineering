@@ -25,10 +25,7 @@ services:
     staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: mindguard-backend
-          type: web
-          property: host
+        value: https://mindguard-backend.onrender.com/api/v1
     routes:
       - type: rewrite
         source: /*
