@@ -68,6 +68,8 @@ export const authApi = {
     },
     signup: (userData: any) => api.post('/auth/signup', userData),
     createProfessional: (userData: any) => api.post('/auth/create-professional', userData),
+    getUsers: () => api.get('/auth/users'),
+    deleteUser: (userId: number) => api.delete(`/auth/users/${userId}`),
     getCurrentUser: () => {
         const token = localStorage.getItem('token');
         if (!token) return null;
@@ -86,9 +88,9 @@ export const authApi = {
 
 export const assessmentApi = {
     submit: (data: any) => api.post('/assessments/', data),
-    submitChat: (messages: any[], step: string) => api.post('/assessments/chat', { messages, step }),
-    getChatGreeting: () => api.get('/assessments/chat/greeting'),
-    getChatMessage: (messages: any[], step: string) => api.post('/assessments/chat/message', { messages, step }),
+    submitChat: (messages: any[], step: string) => api.post('/assessments/chat/', { messages, step }),
+    getChatGreeting: () => api.get('/assessments/chat/greeting/'),
+    getChatMessage: (messages: any[], step: string) => api.post('/assessments/chat/message/', { messages, step }),
     getHistory: () => api.get('/assessments/me'),
 };
 

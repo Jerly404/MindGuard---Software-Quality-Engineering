@@ -59,16 +59,16 @@ async def get_my_assessments(
         )
     return safe_evaluations
 
-@router.post("/chat/message")
+@router.post("/chat/message/")
 async def get_chat_response(session: ChatSession) -> Any:
     messages_dict = [{"role": m.role, "content": m.content} for m in session.messages]
     return await chatbot_service.get_response(messages_dict, session.step)
 
-@router.get("/chat/greeting")
+@router.get("/chat/greeting/")
 async def get_greeting() -> Any:
     return chatbot_service.get_greeting()
 
-@router.post("/chat")
+@router.post("/chat/")
 async def chat_evaluation(
     *,
     db: AsyncSession = Depends(deps.get_db),

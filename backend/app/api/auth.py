@@ -141,3 +141,39 @@ async def create_professional(
     await db.commit()
     await db.refresh(db_obj)
     return db_obj
+
+@router.get("/users", response_model=List[User])
+async def read_users(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: Usuario = Depends(deps.get_current_user)
+) -> Any:
+    """Listar todos los usuarios (Solo Admin)."""
+    if current_user.rol not in ["admin", "administrador"]:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    result = await db.execute(select(Usuario))
+    return result.scalars().all()
+
+@router.delete("/users/{user_id}", response_model=Msg)
+async def delete_user(
+    user_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: Usuario = Depends(deps.get_current_user)
+) -> Any:
+    """Eliminar un usuario (Solo Admin)."""
+    if current_user.rol not in ["admin", "administrador"]:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    result = await db.execute(select(Usuario).where(Usuario.id == user_id))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # No permitir que el admin se borre a sí mismo accidentalmente
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete current admin user")
+
+    await db.delete(user)
+    await db.commit()
+    return {"msg": "User deleted successfully"}
