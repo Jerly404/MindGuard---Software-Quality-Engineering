@@ -22,9 +22,16 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         loadData();
         
+        // Polling para nuevos datos (cada 30 seg)
+        const dataInterval = setInterval(loadData, 30000);
+        
         // Reloj para apertura automática de citas
         const timer = setInterval(checkAutoOpenLink, 30000); // Cada 30 seg
-        return () => clearInterval(timer);
+        
+        return () => {
+            clearInterval(dataInterval);
+            clearInterval(timer);
+        };
     }, [appointments]);
 
     const loadData = async () => {

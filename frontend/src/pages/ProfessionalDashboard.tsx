@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
     Users, Calendar, DollarSign, Activity, 
     MessageSquare, Clock, ArrowRight, ExternalLink, 
-    ChevronRight, CheckCircle2, AlertCircle, RefreshCw
+    ChevronRight, CheckCircle2, AlertCircle, RefreshCw,
+    Send, Video
 } from 'lucide-react';
 import { premiumApi } from '../services/api';
 
@@ -16,10 +17,7 @@ const ProfessionalDashboard: React.FC = () => {
 
     useEffect(() => {
         loadData();
-        // Reloj para apertura automática de citas
-        const timer = setInterval(checkAutoOpenLink, 30000);
-        return () => clearInterval(timer);
-    }, [appointments]);
+    }, []);
 
     const loadData = async () => {
         setLoading(true);
@@ -39,16 +37,9 @@ const ProfessionalDashboard: React.FC = () => {
         }
     };
 
-    const checkAutoOpenLink = () => {
-        const now = new Date();
-        appointments.forEach(app => {
-            const appDate = new Date(app.fecha);
-            const diff = (appDate.getTime() - now.getTime()) / 60000;
-            if (diff <= 0 && diff > -5 && app.estado === 'programada') {
-                window.open(app.link, '_blank');
-                app.estado = 'en_curso';
-            }
-        });
+    const sendLinkToPatient = (link: string, patientName: string) => {
+        // Simulación de envío de notificación
+        alert(`🚀 Link enviado a ${patientName}.\nLa sesión ya está activa en su panel.`);
     };
 
     const viewHistory = async (patient: any) => {
@@ -62,72 +53,91 @@ const ProfessionalDashboard: React.FC = () => {
     };
 
     const scheduleMeeting = async (patientId: number) => {
-        const fecha = prompt("Ingresa la fecha y hora (YYYY-MM-DD HH:MM):", "2024-05-18 10:00");
+        const fecha = prompt("Ingresa la fecha y hora (YYYY-MM-DD HH:MM):", new Date().toISOString().slice(0,16).replace('T',' '));
         if (!fecha) return;
         try {
             await premiumApi.createAppointment({
                 id_paciente: patientId,
                 fecha_cita: fecha,
-                mensaje_seguimiento: "Sesión de control semanal"
+                mensaje_seguimiento: "Sesión de control MindGuard"
             });
-            alert("Cita programada con éxito");
+            alert("Cita programada. El link único ha sido generado.");
             loadData();
         } catch (e) {
             alert("Error al agendar");
         }
     };
 
+    const attendNow = async (patientId: number, patientName: string) => {
+        const now = new Date().toISOString();
+        try {
+            const res = await premiumApi.createAppointment({
+                id_paciente: patientId,
+                fecha_cita: now,
+                mensaje_seguimiento: "Sesión inmediata iniciada por el profesional"
+            });
+            const link = res.data.link;
+            
+            // Simular envío de notificación (el backend ya guardó la cita y el paciente la verá)
+            alert(`🚀 Sesión inmediata generada para ${patientName}.\nEl link ha sido enviado a su panel y se abrirá tu sala ahora.`);
+            
+            // Abrir el link
+            window.open(link, '_blank');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Error al iniciar sesión inmediata");
+        }
+    };
+
     return (
         <div className="container-fluid min-h-screen bg-slate-50 p-6">
             <div className="max-w-7xl mx-auto">
-                <header className="mb-10">
-                    <h1 className="text-3xl font-black text-slate-900">Panel Profesional</h1>
-                    <p className="text-slate-500 font-medium">Gestión de Pacientes y Supervisión Clínica</p>
+                <header className="mb-10 flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900">Panel Profesional</h1>
+                        <p className="text-slate-500 font-medium">Gestión de Pacientes y Supervisión Clínica</p>
+                    </div>
+                    <button onClick={loadData} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50">
+                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                    </button>
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                        <p className="text-slate-400 text-xs font-bold uppercase mb-2">Pacientes Asignados</p>
-                        <div className="flex justify-between items-center">
-                            <span className="text-4xl font-black text-slate-800">{patients.length}</span>
-                            <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600"><Users size={24} /></div>
-                        </div>
+                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-indigo-500">
+                        <p className="text-slate-400 text-xs font-bold uppercase mb-2">Pacientes</p>
+                        <span className="text-4xl font-black text-slate-800">{patients.length}</span>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                        <p className="text-slate-400 text-xs font-bold uppercase mb-2">Ingresos Estimados</p>
-                        <div className="flex justify-between items-center">
-                            <span className="text-4xl font-black text-slate-800">${earnings?.total_ganado || '0'}</span>
-                            <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600"><DollarSign size={24} /></div>
-                        </div>
+                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-emerald-500">
+                        <p className="text-slate-400 text-xs font-bold uppercase mb-2">Ganancias</p>
+                        <span className="text-4xl font-black text-slate-800">${earnings?.total_ganado || '0'}</span>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-amber-500">
                         <p className="text-slate-400 text-xs font-bold uppercase mb-2">Citas Hoy</p>
-                        <div className="flex justify-between items-center">
-                            <span className="text-4xl font-black text-slate-800">
-                                {appointments.filter(a => new Date(a.fecha).toDateString() === new Date().toDateString()).length}
-                            </span>
-                            <div className="bg-amber-50 p-3 rounded-2xl text-amber-600"><Clock size={24} /></div>
-                        </div>
+                        <span className="text-4xl font-black text-slate-800">
+                            {appointments.filter(a => new Date(a.fecha).toDateString() === new Date().toDateString()).length}
+                        </span>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2"><Users className="text-indigo-600" /> Mis Pacientes</h3>
+                            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2"><Users size={20} className="text-indigo-600" /> Pacientes bajo supervisión</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {patients.map(p => (
-                                    <div key={p.id} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 hover:border-indigo-200 transition-all group">
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center font-bold text-indigo-600 shadow-sm">{p.nombre[0]}</div>
-                                            <div>
-                                                <p className="font-bold text-slate-800">{p.nombre}</p>
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Riesgo: {p.riesgo}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => viewHistory(p)} className="flex-1 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold hover:bg-slate-100">Historial</button>
-                                            <button onClick={() => scheduleMeeting(p.id)} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-bold hover:bg-indigo-700">Agendar</button>
+                                    <div key={p.id} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 hover:border-indigo-200 transition-all">
+                                        <p className="font-bold text-slate-800">{p.nombre}</p>
+                                        <p className="text-[10px] text-slate-500 mb-4">{p.email}</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => viewHistory(p)} className="py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold hover:bg-slate-100">Historial</button>
+                                            <button onClick={() => scheduleMeeting(p.id)} className="py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold hover:bg-slate-100">Agendar</button>
+                                            <button 
+                                                onClick={() => attendNow(p.id, p.nombre)} 
+                                                className="col-span-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100"
+                                            >
+                                                <Video size={14} /> ATENDER AHORA
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -136,18 +146,15 @@ const ProfessionalDashboard: React.FC = () => {
 
                         {selectedPatient && (
                             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm animate-in slide-in-from-bottom-5">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-xl font-black text-slate-800">Historial: {selectedPatient.nombre}</h3>
-                                    <button onClick={() => setSelectedPatient(null)} className="text-slate-400 hover:text-slate-600"><ChevronRight className="rotate-90" /></button>
-                                </div>
+                                <h3 className="text-xl font-black text-slate-800 mb-6">Historial: {selectedPatient.nombre}</h3>
                                 <div className="space-y-4">
                                     {patientHistory.map(ev => (
-                                        <div key={ev.id} className="p-4 bg-slate-50 rounded-2xl border-l-4 border-indigo-500">
-                                            <div className="flex justify-between mb-2">
-                                                <span className="text-[10px] font-bold text-slate-500 uppercase">{new Date(ev.fecha).toLocaleDateString()}</span>
-                                                <span className="text-[10px] font-bold text-indigo-600">PHQ9: {ev.phq9Score} | GAD7: {ev.gad7Score}</span>
+                                        <div key={ev.id} className="p-4 bg-slate-50 rounded-2xl">
+                                            <div className="flex justify-between text-[10px] font-bold uppercase text-slate-500 mb-2">
+                                                <span>{new Date(ev.fecha).toLocaleDateString()}</span>
+                                                <span className="text-indigo-600">P:{ev.phq9Score} G:{ev.gad7Score}</span>
                                             </div>
-                                            <p className="text-xs text-slate-700 italic">"{ev.resultadoIA}"</p>
+                                            <p className="text-xs text-slate-700">"{ev.resultadoIA}"</p>
                                         </div>
                                     ))}
                                 </div>
@@ -156,18 +163,28 @@ const ProfessionalDashboard: React.FC = () => {
                     </div>
 
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                        <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2"><Calendar className="text-indigo-600" /> Agenda de Hoy</h3>
+                        <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2"><Video size={20} className="text-indigo-600" /> Sala de Espera</h3>
                         <div className="space-y-4">
                             {appointments.map(app => (
-                                <div key={app.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                    <p className="text-[10px] font-bold text-indigo-600 uppercase mb-1">Cita con {app.con}</p>
-                                    <p className="text-xs font-black text-slate-800 mb-3">{new Date(app.fecha).toLocaleTimeString()}</p>
-                                    <a href={app.link} target="_blank" rel="noreferrer" className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2">
-                                        <ExternalLink size={12} /> Unirse ahora
-                                    </a>
+                                <div key={app.id} className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-[2rem] relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10"><Video size={40}/></div>
+                                    <p className="text-[10px] font-black text-indigo-600 uppercase mb-1">Cita con {app.con}</p>
+                                    <p className="text-sm font-black text-slate-800 mb-4">{new Date(app.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                    
+                                    <div className="flex flex-col gap-2">
+                                        <a href={app.link} target="_blank" rel="noreferrer" className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100">
+                                            <ExternalLink size={14} /> INICIAR SESIÓN
+                                        </a>
+                                        <button 
+                                            onClick={() => sendLinkToPatient(app.link, app.con)}
+                                            className="w-full py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 hover:bg-indigo-50"
+                                        >
+                                            <Send size={14} /> ENVIAR LINK AL PACIENTE
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
-                            {appointments.length === 0 && <p className="text-center text-[10px] text-slate-400 py-4">No hay citas para hoy</p>}
+                            {appointments.length === 0 && <p className="text-center text-[10px] text-slate-400 py-10 border-2 border-dashed border-slate-100 rounded-3xl">No hay citas programadas para hoy</p>}
                         </div>
                     </div>
                 </div>

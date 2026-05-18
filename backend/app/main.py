@@ -34,6 +34,12 @@ app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["aut
 app.include_router(assessments.router, prefix=f"{settings.API_V1_STR}/assessments", tags=["assessments"])
 app.include_router(premium.router, prefix=f"{settings.API_V1_STR}/premium", tags=["premium"])
 
+# Configuración global para evitar 404 por slashes
+for route in app.routes:
+    if hasattr(route, "endpoint"):
+        app.router.redirect_slashes = False
+
+
 @app.get("/")
 def root():
     return {"message": "Welcome to MindGuard IA API"}
