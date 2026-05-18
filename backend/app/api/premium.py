@@ -4,6 +4,7 @@ from typing import List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from sqlalchemy import func
+import random
 
 from app.api.deps import get_db, get_current_user
 from app.models.base import Usuario, AsignacionProfesional, TransaccionMock, Evaluacion, Cita
@@ -17,8 +18,6 @@ class AppointmentCreate(BaseModel):
     link_reunion: Optional[str] = "https://meet.google.com/new"
     mensaje_seguimiento: Optional[str] = None
 
-# ... (dentro de los endpoints existentes)
-
 @router.post("/appointments")
 async def create_appointment(
     request: AppointmentCreate,
@@ -28,7 +27,6 @@ async def create_appointment(
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Solo profesionales pueden agendar citas")
     
-    # Validar que el paciente esté asignado
     stmt = select(AsignacionProfesional).where(
         AsignacionProfesional.id_paciente == request.id_paciente,
         AsignacionProfesional.id_profesional == current_user.id,
@@ -90,6 +88,7 @@ class PaymentRequest(BaseModel):
     id_profesional: int
     monto: float
     metodo: str
+    referencia_pago: Optional[str] = None
 
 class PaymentResponse(BaseModel):
     mensaje: str
@@ -113,11 +112,12 @@ async def simulate_payment_and_assign(
 ):
     try:
         # 1. Definir expiración
-        es_prueba = request.metodo == "prueba"
-        # Usar timezone-aware si es posible, o simplemente datetime.utcnow() consistente
-        expiracion = datetime.utcnow() + (timedelta(days=2) if es_prueba else timedelta(days=365))
+        if request.metodo == "prueba":
+            expiracion = datetime.utcnow() + timedelta(days=2)
+        else:
+            expiracion = datetime.utcnow() + timedelta(days=30)
 
-        # 2. Crear transacción (Mock)
+        # 2. Crear transacción
         transaccion = TransaccionMock(
             id_usuario=current_user.id,
             id_profesional=request.id_profesional,
@@ -127,7 +127,7 @@ async def simulate_payment_and_assign(
         )
         db.add(transaccion)
         
-        # 3. Gestionar Asignación (Desactivar anteriores)
+        # 3. Gestionar Asignación
         q = select(AsignacionProfesional).where(
             AsignacionProfesional.id_paciente == current_user.id,
             AsignacionProfesional.activa == True
@@ -144,21 +144,23 @@ async def simulate_payment_and_assign(
         )
         db.add(nueva_asig)
         
-        # Un solo commit para todo
         await db.commit()
         await db.refresh(nueva_asig)
-        await db.refresh(transaccion)
+
+        msj = "¡Pago verificado!"
+        if request.metodo == "yape": msj = "¡Yape verificado! Servicio activado."
+        elif request.metodo == "paypal": msj = "Pago con PayPal completado."
+        elif request.metodo == "prueba": msj = "Prueba gratuita activada por 2 días."
 
         return PaymentResponse(
-            mensaje="¡Prueba Gratis Activada!" if es_prueba else "Suscripción Premium Activada",
+            mensaje=msj,
             transaccion_id=transaccion.id,
             asignacion_id=nueva_asig.id,
             expira_en=expiracion
         )
     except Exception as e:
         await db.rollback()
-        print(f"ERROR EN PREMIUM PAYMENT: {str(e)}") # Esto saldrá en la terminal
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/my-assignment")
 async def get_my_assignment(
@@ -170,12 +172,9 @@ async def get_my_assignment(
         AsignacionProfesional.activa == True
     ))
     asig = result.scalars().first()
-    if not asig:
-        return None
+    if not asig: return None
     
-    # Calcular expiración (asumiendo 2 días para el ejemplo visual)
-    fecha_limite = asig.fecha_inicio + timedelta(days=2)
-    
+    fecha_limite = asig.fecha_inicio + timedelta(days=30) # Ajustado a 30 días
     res_pro = await db.execute(select(Usuario).filter(Usuario.id == asig.id_profesional))
     pro = res_pro.scalars().first()
     
@@ -183,10 +182,8 @@ async def get_my_assignment(
         "profesional": pro.nombre if pro else "Especialista",
         "fecha_inicio": asig.fecha_inicio,
         "fecha_expiracion": fecha_limite,
-        "dias_restantes": (fecha_limite - datetime.utcnow()).total_seconds() / 86400
+        "dias_restantes": max(0, (fecha_limite - datetime.utcnow()).total_seconds() / 86400)
     }
-
-# --- NUEVOS ENDPOINTS PARA PROFESIONALES ---
 
 @router.get("/assigned-patients")
 async def get_assigned_patients(
@@ -196,7 +193,6 @@ async def get_assigned_patients(
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
     
-    # Buscar pacientes activos asignados a este profesional
     stmt = select(Usuario).join(AsignacionProfesional, Usuario.id == AsignacionProfesional.id_paciente).where(
         AsignacionProfesional.id_profesional == current_user.id,
         AsignacionProfesional.activa == True
@@ -209,7 +205,7 @@ async def get_assigned_patients(
             "id": p.id,
             "nombre": p.nombre,
             "email": p.email,
-            "riesgo": "Moderado" # Esto podría calcularse dinámicamente
+            "riesgo": "Moderado"
         } for p in patients
     ]
 
@@ -221,7 +217,6 @@ async def get_earnings(
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
     
-    # Sumar montos de transacciones dirigidas a este profesional
     stmt = select(func.sum(TransaccionMock.monto)).where(
         TransaccionMock.id_profesional == current_user.id,
         TransaccionMock.estado == "completado"
@@ -244,7 +239,6 @@ async def get_patient_history(
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
     
-    # Verificar que el paciente esté asignado a este profesional
     asig_check = await db.execute(select(AsignacionProfesional).where(
         AsignacionProfesional.id_paciente == patient_id,
         AsignacionProfesional.id_profesional == current_user.id,
@@ -253,7 +247,6 @@ async def get_patient_history(
     if not asig_check.scalars().first():
         raise HTTPException(status_code=403, detail="Este paciente no está bajo tu supervisión")
 
-    # Obtener evaluaciones
     stmt = select(Evaluacion).where(Evaluacion.id_usuario == patient_id).order_by(Evaluacion.fecha.desc())
     result = await db.execute(stmt)
     evaluations = result.scalars().all()
