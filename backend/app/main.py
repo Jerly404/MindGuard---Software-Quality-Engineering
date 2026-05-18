@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.models.base import Base
 from app.api import deps
@@ -17,14 +18,32 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configuración de CORS ultra-permisiva DEBE ir antes de las rutas
+# Configuración de CORS ultra-permisiva
+# Nota: allow_origins=["*"] con allow_credentials=True puede ser problemático en algunos navegadores.
+# FastAPI lo maneja internamente si es "*", pero es mejor ser explícito si se conocen los dominios.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Aseguramos que los errores 500 también tengan cabeceras CORS
+    response = JSONResponse(
+        status_code=500,
+        content={"detail": str(exc) if settings.SECRET_KEY == "your-super-secret-key-for-dev-only" else "Internal Server Error"},
+    )
+    # Copiamos las cabeceras de CORS si es necesario o dejamos que el middleware lo haga
+    # Pero en caso de error fatal, el middleware a veces no se ejecuta.
+    response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 print("\n" + "="*50)
 print("SISTEMA MINDGUARD CARGADO - CORS CONFIGURADO - RUTAS ACTIVAS")

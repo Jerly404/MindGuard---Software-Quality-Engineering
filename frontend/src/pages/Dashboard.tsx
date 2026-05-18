@@ -178,15 +178,32 @@ const Dashboard: React.FC = () => {
                         {!assignment ? (
                             <div className="bg-indigo-600 p-8 rounded-[3rem] text-white shadow-xl">
                                 <h3 className="text-xl font-black mb-2 flex items-center gap-2">Acceso Premium <Sparkles className="text-amber-400" size={20} /></h3>
-                                <p className="text-indigo-100 text-xs mb-6">Prueba gratuita de 2 días con supervisión profesional.</p>
+                                <p className="text-indigo-100 text-xs mb-6">Prueba gratuita de 1 día con supervisión profesional.</p>
                                 <div className="space-y-3 mb-8">
                                     {professionals.map(pro => (
-                                        <div key={pro.id} className="bg-white/10 p-4 rounded-2xl flex items-center justify-between" onClick={() => setSelectedPro(pro)}>
-                                            <p className="text-[11px] font-bold">{pro.nombre}</p>
-                                            <button 
-                                                onClick={() => {setSelectedPro(pro); setIsPaymentModalOpen(true);}}
-                                                className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-amber-400 hover:text-white"
-                                            >SUSCRIBIRSE</button>
+                                        <div key={pro.id} className="bg-white/10 p-4 rounded-2xl flex flex-col gap-3">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[11px] font-bold">{pro.nombre}</p>
+                                                <span className="bg-amber-400 text-white px-2 py-0.5 rounded-lg text-[8px] font-black">PRO</span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => {setSelectedPro(pro); setIsPaymentModalOpen(true);}}
+                                                    className="flex-1 bg-white text-indigo-600 py-2 rounded-xl text-[10px] font-black hover:bg-amber-400 hover:text-white transition-all"
+                                                >SUSCRIBIRSE</button>
+                                                <button 
+                                                    onClick={async () => {
+                                                        try {
+                                                            const res = await premiumApi.payAndAssign(pro.id, 0, 'prueba');
+                                                            alert("✅ Prueba de 1 día activada. ¡Bienvenido!");
+                                                            loadData();
+                                                        } catch (e) {
+                                                            alert("Error al activar la prueba");
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-indigo-500 text-white border border-indigo-400 py-2 rounded-xl text-[10px] font-black hover:bg-indigo-400 transition-all"
+                                                >PRUEBA 1 DÍA</button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import FloatingChatbot from './components/FloatingChatbot';
 import { authApi } from './services/api';
 import './index.css';
 
@@ -38,6 +39,8 @@ const HomeRedirect = () => {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const user = authApi.getCurrentUser();
+  const showChatbot = isAuthenticated && user && (user.rol === 'usuario' || user.rol === 'paciente');
 
   const handleAuthChange = () => {
     setIsAuthenticated(!!localStorage.getItem('token'));
@@ -87,6 +90,7 @@ function App() {
             />
           </Routes>
         </main>
+        {showChatbot && <FloatingChatbot />}
       </div>
     </Router>
   );

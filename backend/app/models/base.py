@@ -16,7 +16,11 @@ class Usuario(Base):
     colegiatura = Column(String(50), nullable=True) # Nuevo
     especialidad = Column(String(100), nullable=True) # Nuevo
     
-    evaluaciones = relationship("Evaluacion", back_populates="usuario")
+    evaluaciones = relationship("Evaluacion", back_populates="usuario", cascade="all, delete-orphan")
+    registros_emocionales = relationship("RegistroEmocional", back_populates="usuario", cascade="all, delete-orphan")
+    transacciones = relationship("TransaccionMock", back_populates="usuario", cascade="all, delete-orphan", foreign_keys="TransaccionMock.id_usuario")
+    citas_como_paciente = relationship("Cita", back_populates="paciente", cascade="all, delete-orphan", foreign_keys="Cita.id_paciente")
+    citas_como_profesional = relationship("Cita", back_populates="profesional", cascade="all, delete-orphan", foreign_keys="Cita.id_profesional")
 
 class Cuestionario(Base):
     __tablename__ = "Cuestionario"
@@ -37,7 +41,7 @@ class Evaluacion(Base):
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
     
     usuario = relationship("Usuario", back_populates="evaluaciones")
-    resultado_ia_detail = relationship("ResultadoIA", back_populates="evaluacion", uselist=False)
+    resultado_ia_detail = relationship("ResultadoIA", back_populates="evaluacion", uselist=False, cascade="all, delete-orphan")
 
 class RegistroEmocional(Base):
     __tablename__ = "RegistroEmocional"
@@ -48,14 +52,14 @@ class RegistroEmocional(Base):
     disparador = Column(String(200), nullable=True) # ¿Qué causó esto?
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
     
-    usuario = relationship("Usuario")
+    usuario = relationship("Usuario", back_populates="registros_emocionales")
 
 class ResultadoIA(Base):
     __tablename__ = "ResultadoIA"
     id = Column(Integer, primary_key=True, index=True)
     nivel = Column(String(10))
     scoreConfianza = Column(Float)
-    id_evaluacion = Column(Integer, ForeignKey("Evaluacion.id"), unique=True)
+    id_evaluacion = Column(Integer, ForeignKey("Evaluacion.id", ondelete="CASCADE"), unique=True)
     
     evaluacion = relationship("Evaluacion", back_populates="resultado_ia_detail")
     __table_args__ = (CheckConstraint(nivel.in_(['BAJO', 'MEDIO', 'ALTO']), name='check_nivel'),)
@@ -65,7 +69,7 @@ class Recurso(Base):
     id = Column(String(50), primary_key=True)
     titulo = Column(String(200), nullable=False)
     contenido = Column(Text)
-    id_usuario_administrador = Column(Integer, ForeignKey("Usuario.id"))
+    id_usuario_administrador = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"))
 
 class AsignacionProfesional(Base):
     __tablename__ = "AsignacionProfesional"
@@ -88,7 +92,7 @@ class TransaccionMock(Base):
     fecha = Column(DateTime, default=datetime.utcnow)
     estado = Column(String(50), default="completado") # pendiente, completado, fallido
     
-    usuario = relationship("Usuario", foreign_keys=[id_usuario])
+    usuario = relationship("Usuario", back_populates="transacciones", foreign_keys=[id_usuario])
 
 class Cita(Base):
     __tablename__ = "Cita"
@@ -101,5 +105,5 @@ class Cita(Base):
     estado = Column(String(20), default="programada") # programada, completada, cancelada
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
 
-    paciente = relationship("Usuario", foreign_keys=[id_paciente])
-    profesional = relationship("Usuario", foreign_keys=[id_profesional])
+    paciente = relationship("Usuario", foreign_keys=[id_paciente], back_populates="citas_como_paciente")
+    profesional = relationship("Usuario", foreign_keys=[id_profesional], back_populates="citas_como_profesional")

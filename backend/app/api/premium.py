@@ -115,7 +115,8 @@ async def simulate_payment_and_assign(
     current_user: Usuario = Depends(get_current_user)
 ):
     try:
-        expiracion = datetime.utcnow() + (timedelta(days=2) if request.metodo == "prueba" else timedelta(days=30))
+        # Cambio: de 2 días a 1 día para la prueba
+        expiracion = datetime.utcnow() + (timedelta(days=1) if request.metodo == "prueba" else timedelta(days=30))
         transaccion = TransaccionMock(
             id_usuario=current_user.id,
             id_profesional=request.id_profesional,
