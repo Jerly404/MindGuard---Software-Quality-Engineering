@@ -2,13 +2,18 @@ import axios from 'axios';
 
 let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
-// Asegurar que la URL tenga protocolo y sufijo correcto si viene de Render
-if (API_URL && !API_URL.startsWith('http')) {
-    API_URL = `https://${API_URL}`;
+// Autodetección de entorno para Render
+if (window.location.hostname !== 'localhost' && !API_URL.startsWith('http')) {
+    // Si estamos en Render, la URL debe ser https y apuntar al host del backend
+    API_URL = `https://${API_URL.replace('http://', '')}`;
 }
-if (API_URL && !API_URL.endsWith('/api/v1')) {
+
+// Asegurar que termine en /api/v1 sin duplicados
+if (!API_URL.endsWith('/api/v1')) {
     API_URL = API_URL.replace(/\/$/, '') + '/api/v1';
 }
+
+console.log("MindGuard API initialized at:", API_URL);
 
 const api = axios.create({
     baseURL: API_URL,
@@ -22,6 +27,15 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Interceptor para debugging de errores
+api.interceptors.response.use(
+    response => response,
+    error => {
+        console.error("API Error:", error.response?.status, error.message);
+        return Promise.reject(error);
+    }
+);
+
 export const premiumApi = {
     getProfessionals: () => api.get('/premium/professionals'),
     payAndAssign: (id_profesional: number, monto: number, metodo: string) => 
@@ -29,14 +43,12 @@ export const premiumApi = {
     getAssignedPatients: () => api.get('/premium/assigned-patients'),
     getEarnings: () => api.get('/premium/earnings'),
     getPatientHistory: (patientId: number) => api.get(`/premium/patient-history/${patientId}`),
-    // Citas
     createAppointment: (data: { id_paciente: number, fecha_cita: string, mensaje_seguimiento?: string }) => 
         api.post('/premium/appointments', data),
     getMyAppointments: () => api.get('/premium/appointments/me'),
 };
 
 export const authApi = {
-    // Encapsulando la transformación de datos (Single Responsibility Principle)
     login: (credentials: { username: string, password: string }) => {
         const params = new URLSearchParams();
         params.append('username', credentials.username);
