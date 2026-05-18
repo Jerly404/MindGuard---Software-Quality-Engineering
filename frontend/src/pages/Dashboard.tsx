@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Activity, History, Shield, Brain, Calendar, 
-    ArrowRight, Star, Heart, FileText, CheckCircle, 
     Zap, Sparkles, MessageSquare, ExternalLink, RefreshCw,
-    X, DollarSign, Wallet
+    X, Moon, Sun, Wind, CheckCircle, Music, Film, Coffee
 } from 'lucide-react';
 import api, { assessmentApi, premiumApi } from '../services/api';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import BreathingExercise from '../components/BreathingExercise';
 import yapeQR from '../assets/yape-qr.png';
 
 const Dashboard: React.FC = () => {
@@ -18,20 +19,17 @@ const Dashboard: React.FC = () => {
     const [selectedPro, setSelectedPro] = useState<any>(null);
     const [paymentMethod, setPaymentMethod] = useState<'yape' | 'paypal' | null>(null);
     const [appointments, setAppointments] = useState<any[]>([]);
+    const [showBreathing, setShowBreathing] = useState(false);
 
     useEffect(() => {
         loadData();
-        
-        // Polling para nuevos datos (cada 30 seg)
         const dataInterval = setInterval(loadData, 30000);
-        
-        // Reloj para apertura automática de citas
-        const timer = setInterval(checkAutoOpenLink, 30000); // Cada 30 seg
-        
-        return () => {
-            clearInterval(dataInterval);
-            clearInterval(timer);
-        };
+        return () => clearInterval(dataInterval);
+    }, []);
+
+    useEffect(() => {
+        const timer = setInterval(checkAutoOpenLink, 30000);
+        return () => clearInterval(timer);
     }, [appointments]);
 
     const loadData = async () => {
@@ -57,14 +55,13 @@ const Dashboard: React.FC = () => {
     const checkAutoOpenLink = () => {
         const now = new Date();
         appointments.forEach(app => {
+            if (app.estado !== 'programada') return;
             const appDate = new Date(app.fecha);
-            // Si la cita es hoy, ahora, y no han pasado más de 5 minutos
             const diff = (appDate.getTime() - now.getTime()) / 60000;
             
-            if (diff <= 0 && diff > -5 && app.estado === 'programada') {
+            if (diff <= 0 && diff > -10) {
                 console.log("¡Hora de la cita! Abriendo videoconferencia...");
                 window.open(app.link, '_blank');
-                // Opcional: Marcar localmente como abierta para que no se abra mil veces
                 app.estado = 'en_curso';
             }
         });
@@ -83,6 +80,45 @@ const Dashboard: React.FC = () => {
 
     const lastEval = history[history.length - 1];
 
+    const recommendations = useMemo(() => {
+        if (!lastEval) return null;
+        const p = lastEval.phq9Score || 0;
+        const g = lastEval.gad7Score || 0;
+
+        if (g > p && g > 10) {
+            return {
+                title: "Enfoque en Calma y Relajación",
+                color: "amber",
+                icon: <Moon />,
+                activities: ["Práctica de respiración 4-7-8", "Escuchar ruidos blancos o naturaleza", "Caminata consciente de 10 min"],
+                media: { type: "Música", title: "Weightless - Marconi Union", desc: "Diseñada para reducir el pulso cardíaco." }
+            };
+        } else if (p > 10) {
+            return {
+                title: "Impulso de Energía y Ánimo",
+                color: "indigo",
+                icon: <Sun />,
+                activities: ["Escuchar playlist 'Upbeat'", "Ver una comedia ligera", "Llamar a un amigo cercano"],
+                media: { type: "Serie/Peli", title: "Ted Lasso", desc: "Excelente para mejorar el optimismo." }
+            };
+        }
+        return {
+            title: "Mantenimiento del Bienestar",
+            color: "emerald",
+            icon: <Coffee />,
+            activities: ["Escribir 3 gratitudes del día", "Leer 20 páginas de un libro", "Planear algo para mañana"],
+            media: { type: "Podcast", title: "Entiende tu Mente", desc: "Psicología aplicada al día a día." }
+        };
+    }, [lastEval]);
+
+    const chartData = useMemo(() => {
+        return history.slice(-7).map(ev => ({
+            date: new Date(ev.fecha).toLocaleDateString([], {day:'2-digit', month:'short'}),
+            depresion: ev.phq9Score,
+            ansiedad: ev.gad7Score
+        }));
+    }, [history]);
+
     return (
         <div className="container-fluid min-h-screen bg-slate-50 p-6">
             <div className="max-w-7xl mx-auto">
@@ -91,17 +127,20 @@ const Dashboard: React.FC = () => {
                         <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3">
                             Panel de Bienestar <Zap className="text-amber-500" fill="currentColor" size={24} />
                         </h1>
-                        <p className="text-slate-500 font-medium">Tecnología Clínica: MindGuard AI Chatbot v2.0</p>
+                        <p className="text-slate-500 font-medium">MindGuard AI Chatbot v2.0 • {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
-                    <button className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-all shadow-sm">
-                        <FileText size={18} /> Exportar Historial
-                    </button>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setShowBreathing(true)}
+                            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                        >
+                            <Wind size={18} /> Respiración Guiada
+                        </button>
+                    </div>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Sección Principal */}
                     <div className="lg:col-span-2 space-y-8">
-                        {/* Indicadores */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-slate-900 p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
@@ -109,72 +148,108 @@ const Dashboard: React.FC = () => {
                                 </div>
                                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Última Depresión</p>
                                 <div className="flex items-end gap-2">
-                                    <h2 className="text-5xl font-black">{lastEval?.phq9Score || '-'}</h2>
+                                    <h2 className="text-5xl font-black">{lastEval?.phq9Score ?? '-'}</h2>
                                     <span className="text-slate-500 mb-2 font-bold">/ 27</span>
                                 </div>
                             </div>
                             <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
                                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Última Ansiedad</p>
                                 <div className="flex items-end gap-2">
-                                    <h2 className="text-5xl font-black text-slate-800">{lastEval?.gad7Score || '-'}</h2>
+                                    <h2 className="text-5xl font-black text-slate-800">{lastEval?.gad7Score ?? '-'}</h2>
                                     <span className="text-slate-300 mb-2 font-bold">/ 21</span>
                                 </div>
                             </div>
                             <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Estado</p>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Estado General</p>
                                 <div className="flex flex-col gap-2">
                                     <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase w-fit ${
-                                        lastEval?.nivelRiesgo === 'Alto' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                                        (lastEval?.phq9Score > 15 || lastEval?.gad7Score > 15) ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
                                     }`}>
-                                        {lastEval?.nivelRiesgo || 'Estable'}
+                                        {lastEval?.nivelRiesgo || 'Sincronizando...'}
                                     </span>
                                     <p className="text-[10px] text-slate-400 font-medium leading-tight">Analizado por Motor IA v2.1</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Evolución Temporal */}
                         <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                             <div className="flex justify-between items-center mb-10">
                                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                                    <Activity className="text-indigo-600" /> Evolución Temporal
+                                    <Activity className="text-indigo-600" /> Evolución del Estado de Ánimo
                                 </h3>
+                                <div className="flex gap-4 text-[10px] font-black uppercase tracking-tighter">
+                                    <div className="flex items-center gap-2"><div className="h-3 w-3 bg-indigo-500 rounded-full"></div> Depresión</div>
+                                    <div className="flex items-center gap-2"><div className="h-3 w-3 bg-rose-400 rounded-full"></div> Ansiedad</div>
+                                </div>
                             </div>
-                            <div className="h-48 flex items-end gap-1 border-b border-slate-100 pb-2 relative">
-                                <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-100 text-4xl font-black tracking-widest uppercase">Analítica Activa</p>
+                            <div className="h-64 w-full">
+                                {chartData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={chartData}>
+                                            <defs>
+                                                <linearGradient id="colorDep" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                                </linearGradient>
+                                                <linearGradient id="colorAns" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#fb7185" stopOpacity={0.1}/>
+                                                    <stop offset="95%" stopColor="#fb7185" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
+                                            <YAxis hide domain={[0, 27]} />
+                                            <Tooltip 
+                                                contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                                                labelStyle={{fontWeight: 'black', marginBottom: '4px'}}
+                                            />
+                                            <Area type="monotone" dataKey="depresion" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorDep)" />
+                                            <Area type="monotone" dataKey="ansiedad" stroke="#fb7185" strokeWidth={4} fillOpacity={1} fill="url(#colorAns)" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase tracking-widest">Iniciando Analítica...</div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Historial */}
-                        <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
-                            <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-2">
-                                <History className="text-indigo-600" /> Historial Reciente
-                            </h3>
-                            <div className="space-y-4">
-                                {history.map((ev, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
-                                                <Calendar size={18} />
+                        {recommendations && (
+                            <div className={`bg-${recommendations.color}-50 p-8 rounded-[3rem] border border-${recommendations.color}-100 animate-in slide-in-from-left-5`}>
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <h3 className={`text-xl font-black text-${recommendations.color}-900 flex items-center gap-3`}>
+                                            <span className={`p-2 bg-white rounded-xl text-${recommendations.color}-600 shadow-sm`}>{recommendations.icon}</span>
+                                            Recomendaciones para Hoy
+                                        </h3>
+                                        <p className={`text-${recommendations.color}-700 text-xs font-bold mt-1 uppercase tracking-tight`}>{recommendations.title}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase">Actividades Sugeridas</p>
+                                        {recommendations.activities.map((act, i) => (
+                                            <div key={i} className="flex items-center gap-3 bg-white/60 p-3 rounded-2xl text-[11px] font-bold text-slate-700">
+                                                <CheckCircle className={`text-${recommendations.color}-500`} size={16} /> {act}
                                             </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-slate-800">{new Date(ev.fecha).toLocaleDateString()}</p>
-                                                <p className="text-[10px] text-slate-500 truncate max-w-[200px]">{ev.resultadoIA}</p>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase">Contenido Recomendado</p>
+                                        <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 group hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                {recommendations.media.type === 'Música' ? <Music className="text-pink-500" size={18}/> : <Film className="text-indigo-500" size={18}/>}
+                                                <p className="text-[10px] font-black text-slate-400 uppercase">{recommendations.media.type}</p>
                                             </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black uppercase">P: {ev.phq9Score}</span>
-                                            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[9px] font-black uppercase">G: {ev.gad7Score}</span>
+                                            <p className="text-sm font-black text-slate-800 mb-1">{recommendations.media.title}</p>
+                                            <p className="text-[10px] text-slate-500 italic">"{recommendations.media.desc}"</p>
                                         </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Sidebar */}
                     <div className="space-y-8">
-                        {/* Premium */}
                         {!assignment ? (
                             <div className="bg-indigo-600 p-8 rounded-[3rem] text-white shadow-xl">
                                 <h3 className="text-xl font-black mb-2 flex items-center gap-2">Acceso Premium <Sparkles className="text-amber-400" size={20} /></h3>
@@ -194,7 +269,7 @@ const Dashboard: React.FC = () => {
                                                 <button 
                                                     onClick={async () => {
                                                         try {
-                                                            const res = await premiumApi.payAndAssign(pro.id, 0, 'prueba');
+                                                            await premiumApi.payAndAssign(pro.id, 0, 'prueba');
                                                             alert("✅ Prueba de 1 día activada. ¡Bienvenido!");
                                                             loadData();
                                                         } catch (e) {
@@ -212,32 +287,31 @@ const Dashboard: React.FC = () => {
                             <div className="bg-emerald-600 p-8 rounded-[3rem] text-white shadow-xl">
                                 <h3 className="text-xl font-black mb-4 flex items-center gap-2">Modo Premium <CheckCircle size={20} /></h3>
                                 <div className="bg-white/10 p-4 rounded-2xl mb-4">
-                                    <p className="text-[10px] text-emerald-100 uppercase font-bold">Supervisor</p>
+                                    <p className="text-[10px] text-emerald-100 uppercase font-bold">Supervisor Asignado</p>
                                     <p className="text-sm font-black">{assignment.profesional}</p>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-bold uppercase">Días restantes</p>
-                                    <p className="text-2xl font-black">{Math.ceil(assignment.dias_restantes)}</p>
+                                    <p className="text-[10px] font-bold uppercase">Estado de supervisión</p>
+                                    <p className="text-2xl font-black tracking-tighter">ACTIVA</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Citas con Auto-Apertura */}
                         <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                             <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                                <Calendar className="text-indigo-600" /> Próximas Citas
+                                <Calendar className="text-indigo-600" /> Próximas Sesiones
                             </h3>
                             <div className="space-y-4">
                                 {appointments.length > 0 ? appointments.map(app => (
-                                    <div key={app.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                                    <div key={app.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group relative">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <p className="text-xs font-black text-slate-800">{new Date(app.fecha).toLocaleString()}</p>
+                                                <p className="text-xs font-black text-slate-800">{new Date(app.fecha).toLocaleString([], {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</p>
                                                 <p className="text-[9px] text-indigo-600 font-bold uppercase mt-1">Video-Sesión MindGuard</p>
                                             </div>
                                         </div>
-                                        <a href={app.link} target="_blank" rel="noreferrer" className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2">
-                                            <ExternalLink size={12} /> Abrir Reunión
+                                        <a href={app.link} target="_blank" rel="noreferrer" className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors">
+                                            <ExternalLink size={12} /> Unirse a Reunión
                                         </a>
                                     </div>
                                 )) : <p className="text-[10px] text-slate-400 text-center py-4">No tienes citas programadas</p>}
@@ -247,10 +321,9 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Modal Pago */}
             {isPaymentModalOpen && selectedPro && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
+                    <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative">
                         <div className="bg-indigo-600 p-8 text-white">
                             <h3 className="text-2xl font-black">Pagar con Yape o PayPal</h3>
                             <button onClick={() => setIsPaymentModalOpen(false)} className="absolute top-6 right-6 text-white/50 hover:text-white"><X size={28}/></button>
@@ -279,6 +352,8 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {showBreathing && <BreathingExercise onClose={() => setShowBreathing(false)} />}
         </div>
     );
 };

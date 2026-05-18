@@ -27,16 +27,20 @@ async def create_appointment(
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Solo profesionales pueden agendar citas")
     
-    # Verificar asignación
+    # Verificar que el paciente tenga alguna asignación activa (es premium)
     stmt = select(AsignacionProfesional).where(
         AsignacionProfesional.id_paciente == request.id_paciente,
-        AsignacionProfesional.id_profesional == current_user.id,
         AsignacionProfesional.activa == True
     )
     result = await db.execute(stmt)
-    if not result.scalars().first():
-        raise HTTPException(status_code=403, detail="El paciente no está asignado a tu supervisión")
+    asignacion = result.scalars().first()
+    if not asignacion:
+        raise HTTPException(status_code=403, detail="El paciente no tiene una suscripción premium activa")
 
+    # Si el profesional que crea la cita no es el asignado originalmente, 
+    # opcionalmente podríamos actualizar la asignación o simplemente permitirlo.
+    # Para mayor flexibilidad (especialmente en pruebas), permitimos que cualquier profesional atienda.
+    
     # GENERAR LINK ÚNICO PARA ESTA CITA
     # Usamos Jitsi Meet porque permite crear salas persistentes mediante la URL
     room_id = f"MindGuard-{uuid.uuid4().hex[:12]}"

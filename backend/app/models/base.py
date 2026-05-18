@@ -13,8 +13,8 @@ class Usuario(Base):
     password_hash = Column(String(255), nullable=False)
     rol = Column(String(50))
     twoFactorEnabled = Column(Boolean, default=False)
-    colegiatura = Column(String(50), nullable=True) # Nuevo
-    especialidad = Column(String(100), nullable=True) # Nuevo
+    colegiatura = Column(String(50), nullable=True)
+    especialidad = Column(String(100), nullable=True)
     
     evaluaciones = relationship("Evaluacion", back_populates="usuario", cascade="all, delete-orphan")
     registros_emocionales = relationship("RegistroEmocional", back_populates="usuario", cascade="all, delete-orphan")
@@ -37,7 +37,7 @@ class Evaluacion(Base):
     nivelRiesgo = Column(String(50))
     resultadoIA = Column(Text)
     notas_personales = Column(Text, nullable=True)
-    has_high_risk = Column(Boolean, default=False) # Nuevo campo de seguridad
+    has_high_risk = Column(Boolean, default=False)
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
     
     usuario = relationship("Usuario", back_populates="evaluaciones")
@@ -47,9 +47,9 @@ class RegistroEmocional(Base):
     __tablename__ = "RegistroEmocional"
     id = Column(Integer, primary_key=True, index=True)
     fecha = Column(DateTime, default=datetime.utcnow)
-    emocion_principal = Column(String(50)) # ej: Feliz, Triste, Ansioso, Enojado
-    intensidad = Column(Integer) # 1 al 10
-    disparador = Column(String(200), nullable=True) # ¿Qué causó esto?
+    emocion_principal = Column(String(50))
+    intensidad = Column(Integer)
+    disparador = Column(String(200), nullable=True)
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
     
     usuario = relationship("Usuario", back_populates="registros_emocionales")
@@ -86,11 +86,11 @@ class TransaccionMock(Base):
     __tablename__ = "TransaccionMock"
     id = Column(Integer, primary_key=True, index=True)
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
-    id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=True) # A quién se le pagó
+    id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=True)
     monto = Column(Float, nullable=False)
-    metodo_pago = Column(String(50), default="tarjeta") # paypal, yape, tarjeta
+    metodo_pago = Column(String(50), default="tarjeta")
     fecha = Column(DateTime, default=datetime.utcnow)
-    estado = Column(String(50), default="completado") # pendiente, completado, fallido
+    estado = Column(String(50), default="completado")
     
     usuario = relationship("Usuario", back_populates="transacciones", foreign_keys=[id_usuario])
 
@@ -102,7 +102,7 @@ class Cita(Base):
     fecha_cita = Column(DateTime, nullable=False)
     link_reunion = Column(String(255), nullable=True)
     mensaje_seguimiento = Column(Text, nullable=True)
-    estado = Column(String(20), default="programada") # programada, completada, cancelada
+    estado = Column(String(20), default="programada")
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
 
     paciente = relationship("Usuario", foreign_keys=[id_paciente], back_populates="citas_como_paciente")

@@ -19,8 +19,6 @@ app = FastAPI(
 )
 
 # Configuración de CORS ultra-permisiva
-# Nota: allow_origins=["*"] con allow_credentials=True puede ser problemático en algunos navegadores.
-# FastAPI lo maneja internamente si es "*", pero es mejor ser explícito si se conocen los dominios.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,8 +35,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"detail": str(exc) if settings.SECRET_KEY == "your-super-secret-key-for-dev-only" else "Internal Server Error"},
     )
-    # Copiamos las cabeceras de CORS si es necesario o dejamos que el middleware lo haga
-    # Pero en caso de error fatal, el middleware a veces no se ejecuta.
     response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "*"

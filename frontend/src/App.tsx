@@ -31,7 +31,6 @@ const HomeRedirect = () => {
     const user = authApi.getCurrentUser();
     if (!user) return <Navigate to="/login" replace />;
     
-    // Corregido: Aceptar 'admin' o 'administrador'
     if (user.rol === 'admin' || user.rol === 'administrador') return <AdminDashboard />;
     if (user.rol === 'profesional') return <ProfessionalDashboard />;
     return <Dashboard />; 
@@ -97,4 +96,3 @@ function App() {
 }
 
 export default App;
-
