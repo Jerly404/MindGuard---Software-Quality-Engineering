@@ -2,10 +2,19 @@ import axios from 'axios';
 
 let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
-// Autodetección de entorno para Render
-if (window.location.hostname !== 'localhost' && !API_URL.startsWith('http')) {
-    // Si estamos en Render, la URL debe ser https y apuntar al host del backend
-    API_URL = `https://${API_URL.replace('http://', '')}`;
+// Autodetección de entorno para Render y corrección de URLs
+if (window.location.hostname !== 'localhost') {
+    // Si la URL no empieza con http, se la añadimos
+    if (!API_URL.startsWith('http')) {
+        API_URL = `https://${API_URL}`;
+    }
+    
+    // Si el host no tiene un punto (ej: "mindguard-backend-k5py"), 
+    // es un host interno de Render y necesita el dominio público.
+    const urlObj = new URL(API_URL);
+    if (!urlObj.hostname.includes('.')) {
+        API_URL = API_URL.replace(urlObj.hostname, `${urlObj.hostname}.onrender.com`);
+    }
 }
 
 // Asegurar que termine en /api/v1 sin duplicados
