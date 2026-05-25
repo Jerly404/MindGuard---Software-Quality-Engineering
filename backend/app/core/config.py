@@ -7,13 +7,10 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "MindGuard IA"
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "your-super-secret-key-for-dev-only" # Change in production
+    SECRET_KEY: str = "your-super-secret-key-for-dev-only"  # Change in production
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    SQLALCHEMY_DATABASE_URL: str = Field(
-        "sqlite+aiosqlite:///./mindguard.db",
-        env="DATABASE_URL"
-    )
+    SQLALCHEMY_DATABASE_URL: str = Field("sqlite+aiosqlite:///./mindguard.db", env="DATABASE_URL")
     GOOGLE_API_KEY: Optional[str] = Field(None, env="GOOGLE_API_KEY")
     GROQ_API_KEY: Optional[str] = Field(None, env="GROQ_API_KEY")
 
@@ -29,5 +26,6 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = True
         env_file = ".env"
+
 
 settings = Settings()

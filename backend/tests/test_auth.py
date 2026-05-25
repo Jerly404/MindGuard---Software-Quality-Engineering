@@ -9,11 +9,15 @@ from app.models.base import Base
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False)
+TestingSessionLocal = async_sessionmaker(
+    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 async def override_get_db():
     async with TestingSessionLocal() as db:
         yield db
+
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database():
@@ -26,6 +30,7 @@ async def setup_database():
         await conn.run_sync(Base.metadata.drop_all)
     app.dependency_overrides.clear()
 
+
 @pytest.mark.asyncio
 async def test_signup():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -35,6 +40,7 @@ async def test_signup():
         )
     assert response.status_code == 200
     assert response.json()["email"] == "test@example.com"
+
 
 @pytest.mark.asyncio
 async def test_login():

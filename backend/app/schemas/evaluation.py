@@ -11,8 +11,10 @@ class EvaluationBase(BaseModel):
     gad7Answers: Optional[List[int]] = None
     text_input: Optional[str] = None
 
+
 class EvaluationCreate(EvaluationBase):
     pass
+
 
 class DetailedAIAnalysis(BaseModel):
     emociones_detectadas: Dict[str, float]
@@ -21,6 +23,7 @@ class DetailedAIAnalysis(BaseModel):
     patrones: List[str]
     interpretacion: str
     recomendacion: str
+
 
 class Evaluation(EvaluationBase):
     id: int
@@ -33,6 +36,7 @@ class Evaluation(EvaluationBase):
 
     class Config:
         from_attributes = True
+
 
 class EvaluationResult(BaseModel):
     phq9_level: str

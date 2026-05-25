@@ -12,23 +12,22 @@ from app.models.base import Usuario
 from app.schemas.user import TokenPayload
 
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False)
+SessionLocal = async_sessionmaker(
+    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 async def get_db() -> AsyncGenerator:
     async with SessionLocal() as db:
         yield db
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token"
-)
 
-async def get_current_user(
-    db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)
-) -> Usuario:
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token")
+
+
+async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)) -> Usuario:
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_data = TokenPayload(**payload)
     except (jwt.JWTError, ValidationError):
         raise HTTPException(

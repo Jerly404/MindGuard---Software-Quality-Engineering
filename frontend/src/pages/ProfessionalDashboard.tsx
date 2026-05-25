@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
     Users, Calendar, Activity, 
     Clock, ExternalLink, RefreshCw,
@@ -7,20 +7,20 @@ import {
 import { premiumApi } from '../services/api';
 
 const ProfessionalDashboard: React.FC = () => {
-    const [patients, setPatients] = useState<any[]>([]);
-    const [earnings, setEarnings] = useState<any>(null);
-    const [appointments, setAppointments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
-    const [patientHistory, setPatientHistory] = useState<any[]>([]);
+    const [patients, setPatients] = React.useState<any[]>([]);
+    const [earnings, setEarnings] = React.useState<any>(null);
+    const [appointments, setAppointments] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [selectedPatient, setSelectedPatient] = React.useState<any | null>(null);
+    const [patientHistory, setPatientHistory] = React.useState<any[]>([]);
     
     // Modal states
-    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-    const [schedulingPatientId, setSchedulingPatientId] = useState<number | null>(null);
-    const [scheduleDate, setScheduleDate] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = React.useState(false);
+    const [schedulingPatientId, setSchedulingPatientId] = React.useState<number | null>(null);
+    const [scheduleDate, setScheduleDate] = React.useState('');
+    const [submitting, setSubmitting] = React.useState(false);
 
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         setLoading(true);
         try {
             const [patRes, earnRes, appoRes] = await Promise.all([
@@ -31,15 +31,11 @@ const ProfessionalDashboard: React.FC = () => {
             setPatients(patRes.data);
             setEarnings(earnRes.data);
             setAppointments(appoRes.data);
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        loadData();
     }, []);
 
     const sendLinkToPatient = (link: string, patientName: string) => {
@@ -51,8 +47,8 @@ const ProfessionalDashboard: React.FC = () => {
         try {
             const res = await premiumApi.getPatientHistory(patient.id);
             setPatientHistory(res.data);
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -71,7 +67,7 @@ const ProfessionalDashboard: React.FC = () => {
             setIsScheduleModalOpen(false);
             setScheduleDate('');
             loadData();
-        } catch {
+        } catch (error) {
             alert("Error al agendar la cita. Verifica que el paciente tenga premium activo.");
         } finally {
             setSubmitting(false);
@@ -90,11 +86,15 @@ const ProfessionalDashboard: React.FC = () => {
             alert(`🚀 Sesión inmediata generada para ${patientName}.\nEl link ha sido enviado a su panel.`);
             window.open(link, '_blank');
             loadData();
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             alert("Error al iniciar sesión inmediata. El paciente debe tener premium activo.");
         }
     };
+
+    React.useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     return (
         <div className="container-fluid min-h-screen bg-slate-50 p-6">

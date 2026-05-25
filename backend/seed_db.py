@@ -12,6 +12,7 @@ from app.models.base import Evaluacion, Usuario
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
 SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
+
 async def seed():
     async with SessionLocal() as db:
         # 1. Crear usuario admin si no existe
@@ -23,7 +24,7 @@ async def seed():
                 nombre="Administrador",
                 email="admin@mindguard.ai",
                 password_hash=get_password_hash("admin123"),
-                rol="admin"
+                rol="admin",
             )
             db.add(user)
             await db.commit()
@@ -37,7 +38,7 @@ async def seed():
                 nombre="Dr. Ricardo Gareca",
                 email="psicologo@mindguard.ai",
                 password_hash=get_password_hash("admin123"),
-                rol="profesional"
+                rol="profesional",
             )
             db.add(pro)
             await db.commit()
@@ -48,7 +49,7 @@ async def seed():
         if not result_ev.scalars().first():
             print("Insertando historial de prueba...")
             for i in range(10):
-                fecha = datetime.utcnow() - timedelta(days=(10-i))
+                fecha = datetime.utcnow() - timedelta(days=(10 - i))
                 ev = Evaluacion(
                     id_usuario=user.id,
                     fecha=fecha,
@@ -57,11 +58,12 @@ async def seed():
                     nivelRiesgo=random.choice(["Leve", "Moderado", "Alto"]),
                     resultadoIA="Análisis de prueba generado automáticamente.",
                     has_high_risk=random.choice([True, False]),
-                    notas_personales=f"Evaluación del día {fecha.date()}"
+                    notas_personales=f"Evaluación del día {fecha.date()}",
                 )
                 db.add(ev)
             await db.commit()
             print("Historial de prueba creado.")
+
 
 if __name__ == "__main__":
     asyncio.run(seed())

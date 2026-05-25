@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
     Shield, Activity, Users, UserPlus, Trash2, 
     Mail, RefreshCw, 
@@ -7,34 +7,28 @@ import {
 import { authApi } from '../services/api';
 
 const AdminDashboard: React.FC = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [allUsers, setAllUsers] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'pacientes' | 'profesionales' | 'todos'>('pacientes');
-    const [isAddingPro, setIsAddingPro] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [allUsers, setAllUsers] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [activeTab, setActiveTab] = React.useState<'pacientes' | 'profesionales' | 'todos'>('pacientes');
+    const [isAddingPro, setIsAddingPro] = React.useState(false);
+    const [searchTerm, setSearchTerm] = React.useState('');
     
     // Formulario para nuevo profesional
-    const [newPro, setNewPro] = useState({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
-    const [submitting, setSubmitting] = useState(false);
+    const [newPro, setNewPro] = React.useState({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
+    const [submitting, setSubmitting] = React.useState(false);
 
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         setLoading(true);
         try {
             const response = await authApi.getUsers();
             console.log("DATOS RECIBIDOS DEL BACKEND:", response.data);
             setAllUsers(response.data);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
+        } catch (error) {
             console.error("ERROR CARGANDO USUARIOS:", error);
             alert("Error al conectar con el servidor. Verifica tu conexión.");
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        loadData();
     }, []);
 
     const handleDelete = async (id: number, name: string) => {
@@ -43,7 +37,6 @@ const AdminDashboard: React.FC = () => {
             try {
                 await authApi.deleteUser(id);
                 setAllUsers(prev => prev.filter(u => u.id !== id));
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 alert("No se pudo eliminar al usuario: " + (error.response?.data?.detail || "Error desconocido"));
             }
@@ -59,13 +52,16 @@ const AdminDashboard: React.FC = () => {
             setIsAddingPro(false);
             setNewPro({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
             alert("✅ Profesional registrado con éxito.");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             alert(error.response?.data?.detail || "Error al registrar profesional");
         } finally {
             setSubmitting(false);
         }
     };
+
+    React.useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     // Filtrado robusto
     const filteredUsers = allUsers.filter(u => {

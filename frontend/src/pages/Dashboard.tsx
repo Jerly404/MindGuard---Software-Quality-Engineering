@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { 
     Activity, Brain, Calendar, 
     Zap, Sparkles, ExternalLink,
@@ -19,20 +19,16 @@ interface Appointment {
 }
 
 const Dashboard: React.FC = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [history, setHistory] = useState<any[]>([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [assignment, setAssignment] = useState<any>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [professionals, setProfessionals] = useState<any[]>([]);
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [selectedPro, setSelectedPro] = useState<any>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'yape' | 'paypal' | null>(null);
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [showBreathing, setShowBreathing] = useState(false);
+    const [history, setHistory] = React.useState<any[]>([]);
+    const [assignment, setAssignment] = React.useState<any>(null);
+    const [professionals, setProfessionals] = React.useState<any[]>([]);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
+    const [selectedPro, setSelectedPro] = React.useState<any>(null);
+    const [paymentMethod, setPaymentMethod] = React.useState<'yape' | 'paypal' | null>(null);
+    const [appointments, setAppointments] = React.useState<Appointment[]>([]);
+    const [showBreathing, setShowBreathing] = React.useState(false);
 
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         try {
             const [histRes, asigRes, proRes, appoRes] = await Promise.all([
                 assessmentApi.getHistory(),
@@ -44,13 +40,12 @@ const Dashboard: React.FC = () => {
             setAssignment(asigRes.data);
             setProfessionals(proRes.data);
             setAppointments(appoRes.data);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (e) {
-            // console.error("Dashboard Load Error:", e);
+        } catch (error) {
+            // console.error("Dashboard Load Error:", error);
         }
-    };
+    }, []);
 
-    const checkAutoOpenLink = useCallback(() => {
+    const checkAutoOpenLink = React.useCallback(() => {
         const now = new Date();
         appointments.forEach(app => {
             if (app.estado !== 'programada') return;
@@ -65,31 +60,31 @@ const Dashboard: React.FC = () => {
         });
     }, [appointments]);
 
-    useEffect(() => {
-        loadData();
-        const dataInterval = setInterval(loadData, 30000);
-        return () => clearInterval(dataInterval);
-    }, []);
-
-    useEffect(() => {
-        const timer = setInterval(checkAutoOpenLink, 30000);
-        return () => clearInterval(timer);
-    }, [appointments]);
-
     const handleYapePayment = async () => {
         try {
             const res = await premiumApi.payAndAssign(selectedPro.id, 20, 'yape');
             alert(res.data.mensaje);
             setIsPaymentModalOpen(false);
             loadData();
-        } catch {
+        } catch (error) {
             alert("Error al procesar el pago");
         }
     };
 
+    React.useEffect(() => {
+        loadData();
+        const dataInterval = setInterval(loadData, 30000);
+        return () => clearInterval(dataInterval);
+    }, [loadData]);
+
+    React.useEffect(() => {
+        const timer = setInterval(checkAutoOpenLink, 30000);
+        return () => clearInterval(timer);
+    }, [checkAutoOpenLink]);
+
     const lastEval = history[history.length - 1];
 
-    const recommendations = useMemo(() => {
+    const recommendations = React.useMemo(() => {
         if (!lastEval) return null;
         const p = lastEval.phq9Score || 0;
         const g = lastEval.gad7Score || 0;
@@ -120,7 +115,7 @@ const Dashboard: React.FC = () => {
         };
     }, [lastEval]);
 
-    const chartData = useMemo(() => {
+    const chartData = React.useMemo(() => {
         return history.slice(-7).map(ev => ({
             date: new Date(ev.fecha).toLocaleDateString([], {day:'2-digit', month:'short'}),
             depresion: ev.phq9Score,

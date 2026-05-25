@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { User, Mail, Lock } from 'lucide-react';
 
 const Signup: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [nombre, setNombre] = useState('');
-    const [error, setError] = useState('');
+    const [email, setEmail] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    const [nombre, setNombre] = React.useState('');
+    const [error, setError] = React.useState('');
     const navigate = useNavigate();
 
     const handleSignup = async (e: React.FormEvent) => {

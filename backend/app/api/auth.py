@@ -15,6 +15,7 @@ from app.services.email import email_service
 
 router = APIRouter()
 
+
 @router.post("/password-recovery/{email}", response_model=Msg)
 async def recover_password(email: str, db: AsyncSession = Depends(deps.get_db)) -> Any:
     """
@@ -29,15 +30,14 @@ async def recover_password(email: str, db: AsyncSession = Depends(deps.get_db)) 
             detail="The user with this username does not exist in the system.",
         )
     password_reset_token = security.create_password_reset_token(email=email)
-    email_sent = await email_service.send_recovery_email(
-        email_to=user.email, token=password_reset_token
-    )
+    email_sent = await email_service.send_recovery_email(email_to=user.email, token=password_reset_token)
     if not email_sent:
         raise HTTPException(
             status_code=500,
             detail="Failed to send recovery email. Check server logs for the recovery code.",
         )
     return {"msg": "Password recovery email sent"}
+
 
 @router.post("/reset-password/", response_model=Msg)
 async def reset_password(
@@ -65,6 +65,7 @@ async def reset_password(
     await db.commit()
     return {"msg": "Password updated successfully"}
 
+
 @router.post("/login/access-token", response_model=Token)
 async def login_access_token(
     db: AsyncSession = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
@@ -77,18 +78,13 @@ async def login_access_token(
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
-        "access_token": security.create_access_token(
-            user.id, role=user.rol, expires_delta=access_token_expires
-        ),
+        "access_token": security.create_access_token(user.id, role=user.rol, expires_delta=access_token_expires),
         "token_type": "bearer",
     }
 
+
 @router.post("/signup", response_model=User)
-async def create_user(
-    *,
-    db: AsyncSession = Depends(deps.get_db),
-    user_in: UserCreate
-) -> Any:
+async def create_user(*, db: AsyncSession = Depends(deps.get_db), user_in: UserCreate) -> Any:
     result = await db.execute(select(Usuario).where(Usuario.email == user_in.email))
     user = result.scalars().first()
 
@@ -108,12 +104,13 @@ async def create_user(
     await db.refresh(db_obj)
     return db_obj
 
+
 @router.post("/create-professional", response_model=User)
 async def create_professional(
     *,
     db: AsyncSession = Depends(deps.get_db),
     user_in: UserCreate,
-    current_user: Usuario = Depends(deps.get_current_user)
+    current_user: Usuario = Depends(deps.get_current_user),
 ) -> Any:
     """Permite a un administrador crear una cuenta de profesional."""
     if current_user.rol not in ["admin", "administrador"]:
@@ -137,17 +134,17 @@ async def create_professional(
         nombre=user_in.nombre,
         rol="profesional",
         colegiatura=user_in.colegiatura,
-        especialidad=user_in.especialidad
+        especialidad=user_in.especialidad,
     )
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
     return db_obj
 
+
 @router.get("/users/", response_model=List[User])
 async def read_users(
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: Usuario = Depends(deps.get_current_user)
+    db: AsyncSession = Depends(deps.get_db), current_user: Usuario = Depends(deps.get_current_user)
 ) -> Any:
     """Listar todos los usuarios (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:
@@ -156,11 +153,10 @@ async def read_users(
     result = await db.execute(select(Usuario))
     return result.scalars().all()
 
+
 @router.delete("/users/{user_id}/", response_model=Msg)
 async def delete_user(
-    user_id: int,
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: Usuario = Depends(deps.get_current_user)
+    user_id: int, db: AsyncSession = Depends(deps.get_db), current_user: Usuario = Depends(deps.get_current_user)
 ) -> Any:
     """Eliminar un usuario (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:

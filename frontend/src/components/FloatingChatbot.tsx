@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { assessmentApi } from '../services/api';
 import { 
     X, Send, Bot, MessageCircle, FileText, CheckCircle2, AlertCircle, RefreshCw
@@ -10,16 +10,16 @@ interface Message {
 }
 
 const FloatingChatbot: React.FC = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [options, setOptions] = useState<string[]>([]);
-    const [inputValue, setInputValue] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [messages, setMessages] = React.useState<Message[]>([]);
+    const [options, setOptions] = React.useState<string[]>([]);
+    const [inputValue, setInputValue] = React.useState('');
+    const [isTyping, setIsTyping] = React.useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [report, setReport] = useState<any>(null);
-    const [isLoadingReport, setIsLoadingReport] = useState(false);
+    const [report, setReport] = React.useState<any>(null);
+    const [isLoadingReport, setIsLoadingReport] = React.useState(false);
     
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,13 +72,13 @@ const FloatingChatbot: React.FC = () => {
         }
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (isOpen && messages.length === 0) {
             Promise.resolve().then(() => loadGreeting());
         }
     }, [isOpen, messages.length]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         scrollToBottom();
     }, [messages, isTyping, report]);
 

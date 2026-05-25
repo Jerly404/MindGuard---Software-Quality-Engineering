@@ -12,11 +12,8 @@ from app.core.config import settings
 async def lifespan(app: FastAPI):
     yield
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
-)
+
+app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json", lifespan=lifespan)
 
 # Configuración de CORS ultra-permisiva
 app.add_middleware(
@@ -25,15 +22,20 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     # Aseguramos que los errores 500 también tengan cabeceras CORS
     response = JSONResponse(
         status_code=500,
-        content={"detail": str(exc) if settings.SECRET_KEY == "your-super-secret-key-for-dev-only" else "Internal Server Error"},
+        content={
+            "detail": str(exc)
+            if settings.SECRET_KEY == "your-super-secret-key-for-dev-only"
+            else "Internal Server Error"
+        },
     )
     response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
     response.headers["Access-Control-Allow-Credentials"] = "true"
@@ -41,9 +43,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
-print("\n" + "="*50)
+
+print("\n" + "=" * 50)
 print("SISTEMA MINDGUARD CARGADO - CORS CONFIGURADO - RUTAS ACTIVAS")
-print("="*50 + "\n")
+print("=" * 50 + "\n")
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(assessments.router, prefix=f"{settings.API_V1_STR}/assessments", tags=["assessments"])

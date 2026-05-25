@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Key } from 'lucide-react';
 
 import api from '../services/api';
 
 const ResetPassword: React.FC = () => {
-    const [token, setToken] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [token, setToken] = React.useState('');
+    const [newPassword, setNewPassword] = React.useState('');
+    const [message, setMessage] = React.useState('');
+    const [error, setError] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {

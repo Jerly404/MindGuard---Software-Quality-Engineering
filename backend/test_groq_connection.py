@@ -5,6 +5,7 @@ from groq import Groq
 
 load_dotenv()
 
+
 def test_groq():
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -18,12 +19,13 @@ def test_groq():
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "Eres un asistente de prueba."},
-                {"role": "user", "content": "Responde solo con: GROQ FUNCIONA"}
+                {"role": "user", "content": "Responde solo con: GROQ FUNCIONA"},
             ],
         )
         print(f"Respuesta: {completion.choices[0].message.content}")
     except Exception as e:
         print(f"ERROR: {str(e)}")
+
 
 if __name__ == "__main__":
     test_groq()

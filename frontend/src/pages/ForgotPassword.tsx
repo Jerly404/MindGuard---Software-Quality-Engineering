@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Mail, ArrowLeft } from 'lucide-react';
 
 const ForgotPassword: React.FC = () => {
-    const [email, setEmail] = useState('');
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [email, setEmail] = React.useState('');
+    const [message, setMessage] = React.useState('');
+    const [error, setError] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {

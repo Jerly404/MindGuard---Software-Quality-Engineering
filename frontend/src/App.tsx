@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -37,7 +37,7 @@ const HomeRedirect = () => {
 };
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [isAuthenticated, setIsAuthenticated] = React.useState(!!localStorage.getItem('token'));
   const user = authApi.getCurrentUser();
   const showChatbot = isAuthenticated && user && (user.rol === 'usuario' || user.rol === 'paciente');
 

@@ -1,4 +1,3 @@
-
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 from app.core.config import settings
@@ -7,14 +6,15 @@ conf = ConnectionConfig(
     MAIL_USERNAME=settings.SMTP_USER or "placeholder",
     MAIL_PASSWORD=settings.SMTP_PASSWORD or "placeholder",
     MAIL_FROM=settings.EMAILS_FROM_EMAIL or "placeholder@example.com",
-    MAIL_PORT=465, # Puerto SSL para Gmail
+    MAIL_PORT=465,  # Puerto SSL para Gmail
     MAIL_SERVER="smtp.gmail.com",
     MAIL_STARTTLS=False,
     MAIL_SSL_TLS=True,
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
-    MAIL_FROM_NAME=settings.EMAILS_FROM_NAME
+    MAIL_FROM_NAME=settings.EMAILS_FROM_NAME,
 )
+
 
 class EmailService:
     async def send_recovery_email(self, email_to: str, token: str) -> bool:
@@ -42,10 +42,7 @@ class EmailService:
         """
 
         message = MessageSchema(
-            subject="Código de Recuperación - MindGuard IA",
-            recipients=[email_to],
-            body=html,
-            subtype=MessageType.html
+            subject="Código de Recuperación - MindGuard IA", recipients=[email_to], body=html, subtype=MessageType.html
         )
 
         try:
@@ -57,5 +54,6 @@ class EmailService:
             print(f"\n\n*** RECOVERY CODE FOR {email_to}: {token} ***\n\n")
             return False
         return True
+
 
 email_service = EmailService()

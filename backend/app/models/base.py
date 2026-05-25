@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+
 class Usuario(Base):
     __tablename__ = "Usuario"
     id = Column(Integer, primary_key=True, index=True)
@@ -29,15 +30,26 @@ class Usuario(Base):
 
     evaluaciones = relationship("Evaluacion", back_populates="usuario", cascade="all, delete-orphan")
     registros_emocionales = relationship("RegistroEmocional", back_populates="usuario", cascade="all, delete-orphan")
-    transacciones = relationship("TransaccionMock", back_populates="usuario", cascade="all, delete-orphan", foreign_keys="TransaccionMock.id_usuario")
-    citas_como_paciente = relationship("Cita", back_populates="paciente", cascade="all, delete-orphan", foreign_keys="Cita.id_paciente")
-    citas_como_profesional = relationship("Cita", back_populates="profesional", cascade="all, delete-orphan", foreign_keys="Cita.id_profesional")
+    transacciones = relationship(
+        "TransaccionMock",
+        back_populates="usuario",
+        cascade="all, delete-orphan",
+        foreign_keys="TransaccionMock.id_usuario",
+    )
+    citas_como_paciente = relationship(
+        "Cita", back_populates="paciente", cascade="all, delete-orphan", foreign_keys="Cita.id_paciente"
+    )
+    citas_como_profesional = relationship(
+        "Cita", back_populates="profesional", cascade="all, delete-orphan", foreign_keys="Cita.id_profesional"
+    )
+
 
 class Cuestionario(Base):
     __tablename__ = "Cuestionario"
     id = Column(String(50), primary_key=True)
     nombre = Column(String(100), nullable=False)
     tipo_cuestionario = Column(String(20))
+
 
 class Evaluacion(Base):
     __tablename__ = "Evaluacion"
@@ -52,7 +64,10 @@ class Evaluacion(Base):
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
 
     usuario = relationship("Usuario", back_populates="evaluaciones")
-    resultado_ia_detail = relationship("ResultadoIA", back_populates="evaluacion", uselist=False, cascade="all, delete-orphan")
+    resultado_ia_detail = relationship(
+        "ResultadoIA", back_populates="evaluacion", uselist=False, cascade="all, delete-orphan"
+    )
+
 
 class RegistroEmocional(Base):
     __tablename__ = "RegistroEmocional"
@@ -65,6 +80,7 @@ class RegistroEmocional(Base):
 
     usuario = relationship("Usuario", back_populates="registros_emocionales")
 
+
 class ResultadoIA(Base):
     __tablename__ = "ResultadoIA"
     id = Column(Integer, primary_key=True, index=True)
@@ -73,7 +89,8 @@ class ResultadoIA(Base):
     id_evaluacion = Column(Integer, ForeignKey("Evaluacion.id", ondelete="CASCADE"), unique=True)
 
     evaluacion = relationship("Evaluacion", back_populates="resultado_ia_detail")
-    __table_args__ = (CheckConstraint(nivel.in_(['BAJO', 'MEDIO', 'ALTO']), name='check_nivel'),)
+    __table_args__ = (CheckConstraint(nivel.in_(["BAJO", "MEDIO", "ALTO"]), name="check_nivel"),)
+
 
 class Recurso(Base):
     __tablename__ = "Recurso"
@@ -81,6 +98,7 @@ class Recurso(Base):
     titulo = Column(String(200), nullable=False)
     contenido = Column(Text)
     id_usuario_administrador = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"))
+
 
 class AsignacionProfesional(Base):
     __tablename__ = "AsignacionProfesional"
@@ -93,6 +111,7 @@ class AsignacionProfesional(Base):
     paciente = relationship("Usuario", foreign_keys=[id_paciente])
     profesional = relationship("Usuario", foreign_keys=[id_profesional])
 
+
 class TransaccionMock(Base):
     __tablename__ = "TransaccionMock"
     id = Column(Integer, primary_key=True, index=True)
@@ -104,6 +123,7 @@ class TransaccionMock(Base):
     estado = Column(String(50), default="completado")
 
     usuario = relationship("Usuario", back_populates="transacciones", foreign_keys=[id_usuario])
+
 
 class Cita(Base):
     __tablename__ = "Cita"

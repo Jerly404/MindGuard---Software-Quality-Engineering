@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { assessmentApi } from '../services/api';
 import { 
@@ -14,16 +14,16 @@ interface Message {
 const FLOW = ["mood", "energy", "sleep", "anxiety", "conclusion"];
 
 const Assessment: React.FC = () => {
-    const [step, setStep] = useState(0); // 0: Consent, 1: Chat, 2: Result
-    const [chatStepIndex, setChatStepIndex] = useState(0);
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [inputValue, setInputValue] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    const [loadingResult, setLoadingResult] = useState(false);
+    const [step, setStep] = React.useState(0); // 0: Consent, 1: Chat, 2: Result
+    const [chatStepIndex, setChatStepIndex] = React.useState(0);
+    const [messages, setMessages] = React.useState<Message[]>([]);
+    const [inputValue, setInputValue] = React.useState('');
+    const [isTyping, setIsTyping] = React.useState(false);
+    const [loadingResult, setLoadingResult] = React.useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = React.useState<any>(null);
     
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
     const scrollToBottom = () => {
@@ -84,7 +84,7 @@ const Assessment: React.FC = () => {
         }
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (step === 1 && messages.length === 0) {
             loadGreeting();
         }
