@@ -1,14 +1,16 @@
 from datetime import timedelta
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.models.base import Usuario
-from app.schemas.user import Token, UserCreate, User, Msg, NewPassword
+from app.schemas.user import Msg, NewPassword, Token, User, UserCreate
 from app.services.email import email_service
 
 router = APIRouter()
@@ -48,16 +50,16 @@ async def reset_password(
     email = security.verify_password_reset_token(new_password.token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
-    
+
     result = await db.execute(select(Usuario).where(Usuario.email == email))
     user = result.scalars().first()
-    
+
     if not user:
         raise HTTPException(
             status_code=404,
             detail="The user with this username does not exist in the system.",
         )
-    
+
     user.password_hash = security.get_password_hash(new_password.new_password)
     db.add(user)
     await db.commit()
@@ -69,10 +71,10 @@ async def login_access_token(
 ) -> Any:
     result = await db.execute(select(Usuario).where(Usuario.email == form_data.username))
     user = result.scalars().first()
-    
+
     if not user or not security.verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
@@ -89,7 +91,7 @@ async def create_user(
 ) -> Any:
     result = await db.execute(select(Usuario).where(Usuario.email == user_in.email))
     user = result.scalars().first()
-    
+
     if user:
         raise HTTPException(
             status_code=400,
@@ -119,16 +121,16 @@ async def create_professional(
             status_code=403,
             detail="No tienes permisos suficientes para realizar esta acción.",
         )
-    
+
     result = await db.execute(select(Usuario).where(Usuario.email == user_in.email))
     user = result.scalars().first()
-    
+
     if user:
         raise HTTPException(
             status_code=400,
             detail="Ya existe un usuario con este correo electrónico.",
         )
-    
+
     db_obj = Usuario(
         email=user_in.email,
         password_hash=security.get_password_hash(user_in.password),
@@ -150,7 +152,7 @@ async def read_users(
     """Listar todos los usuarios (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+
     result = await db.execute(select(Usuario))
     return result.scalars().all()
 
@@ -163,13 +165,13 @@ async def delete_user(
     """Eliminar un usuario (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+
     result = await db.execute(select(Usuario).where(Usuario.id == user_id))
     user = result.scalars().first()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # No permitir que el admin se borre a sí mismo accidentalmente
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete current admin user")

@@ -8,33 +8,40 @@ const BreathingExercise: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [cycles, setCycles] = useState(0);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isActive) {
-      timer = setInterval(() => {
-        setSeconds((prev) => prev - 1);
-      }, 1000);
-    }
+    if (!isActive) return;
+
+    const timer = setInterval(() => {
+      setSeconds((prevSeconds) => {
+        if (prevSeconds > 1) {
+          return prevSeconds - 1;
+        }
+
+        // Logic for next phase
+        setPhase((currentPhase) => {
+          switch (currentPhase) {
+            case 'Inhala':
+              setSeconds(7);
+              return 'Mantén';
+            case 'Mantén':
+              setSeconds(8);
+              return 'Exhala';
+            case 'Exhala':
+              setCycles((c) => c + 1);
+              setSeconds(4);
+              return 'Espera';
+            case 'Espera':
+              setSeconds(4);
+              return 'Inhala';
+            default:
+              return 'Inhala';
+          }
+        });
+        return 0;
+      });
+    }, 1000);
+
     return () => clearInterval(timer);
   }, [isActive]);
-
-  useEffect(() => {
-    if (seconds === 0) {
-      if (phase === 'Inhala') {
-        setPhase('Mantén');
-        setSeconds(7);
-      } else if (phase === 'Mantén') {
-        setPhase('Exhala');
-        setSeconds(8);
-      } else if (phase === 'Exhala') {
-        setPhase('Espera');
-        setSeconds(4);
-        setCycles(prev => prev + 1); // Solo se incrementa aquí cuando los segundos llegan a 0 exactamente
-      } else if (phase === 'Espera') {
-        setPhase('Inhala');
-        setSeconds(4);
-      }
-    }
-  }, [seconds, phase]);
 
   return (
     <div className="breathing-modal-overlay">

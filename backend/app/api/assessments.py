@@ -1,15 +1,17 @@
-from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from app.api import deps
-from app.models.base import Usuario, Evaluacion
-from app.schemas.evaluation import EvaluationCreate, Evaluation
-from app.services.clinical import clinical_service, ai_service
-from app.services.chatbot import chatbot_service
-from app.services.report_service import ai_report_service
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Any, List
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api import deps
+from app.models.base import Evaluacion, Usuario
+from app.schemas.evaluation import Evaluation, EvaluationCreate
+from app.services.chatbot import chatbot_service
+from app.services.clinical import ai_service
+from app.services.report_service import ai_report_service
 
 router = APIRouter()
 
@@ -37,13 +39,13 @@ async def get_my_assessments(
         select(Evaluacion).where(Evaluacion.id_usuario == current_user.id).order_by(Evaluacion.fecha.asc())
     )
     evaluations_db = result.scalars().all()
-    
+
     safe_evaluations = []
     for ev in evaluations_db:
         # Si el score es 0 pero tiene nivel de riesgo, lo corregimos al vuelo para el frontend
         p_score = ev.phq9Score if (ev.phq9Score and ev.phq9Score > 0) else level_to_score(ev.nivelRiesgo)
         g_score = ev.gad7Score if (ev.gad7Score and ev.gad7Score > 0) else level_to_score(ev.nivelRiesgo)
-        
+
         safe_evaluations.append(
             Evaluation(
                 id=ev.id,
@@ -78,11 +80,11 @@ async def chat_evaluation(
     try:
         messages_dict = [{"role": m.role, "content": m.content} for m in session.messages]
         report = await ai_report_service.generate_daily_report(messages_dict)
-        
+
         # Puntajes dinámicos basados en el reporte de IA
         ansiedad_label = report.get("nivel_ansiedad", "Bajo")
         depresion_label = report.get("nivel_depresion", "Bajo")
-        
+
         db_obj = Evaluacion(
             phq9Score=level_to_score(depresion_label),
             gad7Score=level_to_score(ansiedad_label),

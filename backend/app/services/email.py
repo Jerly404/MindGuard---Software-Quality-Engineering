@@ -1,7 +1,7 @@
+
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from pydantic import EmailStr
+
 from app.core.config import settings
-from pathlib import Path
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.SMTP_USER or "placeholder",
@@ -20,7 +20,7 @@ class EmailService:
     async def send_recovery_email(self, email_to: str, token: str) -> bool:
         print(f"📧 Attempting to send email to {email_to}")
         print(f"📧 SMTP config: USER={settings.SMTP_USER}, FROM={settings.EMAILS_FROM_EMAIL}")
-        
+
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD or settings.SMTP_USER == "placeholder":
             print(f"\n\n*** RECOVERY CODE FOR {email_to}: {token} ***\n\n")
             return False
@@ -40,7 +40,7 @@ class EmailService:
         </body>
         </html>
         """
-        
+
         message = MessageSchema(
             subject="Código de Recuperación - MindGuard IA",
             recipients=[email_to],

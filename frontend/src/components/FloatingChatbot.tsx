@@ -15,6 +15,7 @@ const FloatingChatbot: React.FC = () => {
     const [options, setOptions] = useState<string[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [report, setReport] = useState<any>(null);
     const [isLoadingReport, setIsLoadingReport] = useState(false);
     
@@ -24,21 +25,13 @@ const FloatingChatbot: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(() => {
-        if (isOpen && messages.length === 0) loadGreeting();
-    }, [isOpen]);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages, isTyping, report]);
-
     const loadGreeting = async () => {
         setIsTyping(true);
         try {
             const res = await assessmentApi.getChatGreeting();
             setMessages([{ role: 'assistant', content: res.data.response }]);
             setOptions(res.data.options || []);
-        } catch (e) {
+        } catch {
             setMessages([{ role: 'assistant', content: "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
         } finally {
             setIsTyping(false);
@@ -59,7 +52,7 @@ const FloatingChatbot: React.FC = () => {
             const res = await assessmentApi.getChatMessage(newMessages, "chat");
             setMessages([...newMessages, { role: 'assistant', content: res.data.response }]);
             setOptions(res.data.options || []);
-        } catch (e) {
+        } catch {
             setMessages([...newMessages, { role: 'assistant', content: "Lo siento, tuve un problema de conexión." }]);
         } finally {
             setIsTyping(false);
@@ -72,12 +65,22 @@ const FloatingChatbot: React.FC = () => {
             // Reutilizamos el endpoint de análisis (ajustado en el backend si fuera necesario)
             const res = await assessmentApi.submitChat(messages, "final");
             setReport(res.data);
-        } catch (e) {
+        } catch {
             alert("No se pudo generar el reporte en este momento.");
         } finally {
             setIsLoadingReport(false);
         }
     };
+
+    useEffect(() => {
+        if (isOpen && messages.length === 0) {
+            Promise.resolve().then(() => loadGreeting());
+        }
+    }, [isOpen, messages.length]);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, isTyping, report]);
 
     if (!isOpen) {
         return (
@@ -164,7 +167,8 @@ const FloatingChatbot: React.FC = () => {
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                                 <p className="text-[10px] font-bold text-slate-600 mb-2 flex items-center gap-1"><AlertCircle size={12}/> Plan de Acción:</p>
                                 <ul className="text-[9px] text-slate-600 space-y-1">
-                                    {(report.plan_accion || [report.recomendacion]).map((step: string, i: number) => (
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {(report.plan_accion || [report.recomendacion]).map((step: any, i: number) => (
                                         <li key={i} className="flex gap-2"><span>•</span> {step}</li>
                                     ))}
                                 </ul>

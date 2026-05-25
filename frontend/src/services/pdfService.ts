@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 export const generateClinicalReport = async (userData: any, evaluations: any[]) => {
   const doc = new jsPDF();
@@ -33,7 +32,7 @@ export const generateClinicalReport = async (userData: any, evaluations: any[]) 
   doc.text('Nivel de Riesgo', 120, yPos + 7);
   
   yPos += 15;
-  evaluations.slice().reverse().forEach((ev, index) => {
+  evaluations.slice().reverse().forEach((ev) => {
     if (yPos > 270) {
       doc.addPage();
       yPos = 20;

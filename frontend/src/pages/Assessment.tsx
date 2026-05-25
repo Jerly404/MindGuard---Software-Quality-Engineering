@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { assessmentApi } from '../services/api';
 import { 
-    ArrowLeft, ArrowRight, CheckCircle, Brain, HeartPulse, 
-    ShieldCheck, AlertTriangle, Send, User, Bot, Info, Sparkles, RefreshCw
+    ArrowRight, CheckCircle, Brain, HeartPulse, 
+    ShieldCheck, AlertTriangle, Send, User, Bot, Sparkles, RefreshCw
 } from 'lucide-react';
 
 interface Message {
@@ -20,6 +20,7 @@ const Assessment: React.FC = () => {
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [loadingResult, setLoadingResult] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [result, setResult] = useState<any>(null);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -29,22 +30,31 @@ const Assessment: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(() => {
-        if (step === 1 && messages.length === 0) {
-            loadGreeting();
-        }
-        scrollToBottom();
-    }, [step, messages, isTyping]);
-
     const loadGreeting = async () => {
         setIsTyping(true);
         try {
             const res = await assessmentApi.getChatGreeting();
             setMessages([{ role: 'assistant', content: res.data.response }]);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             setMessages([{ role: 'assistant', content: "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
         } finally {
             setIsTyping(false);
+        }
+    };
+
+    const finishAssessment = async (finalMessages: Message[]) => {
+        setLoadingResult(true);
+        try {
+            const currentStep = FLOW[chatStepIndex];
+            const response = await assessmentApi.submitChat(finalMessages, currentStep);
+            setResult(response.data);
+            setStep(2);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            alert("Error al analizar la conversación.");
+        } finally {
+            setLoadingResult(false);
         }
     };
 
@@ -68,24 +78,18 @@ const Assessment: React.FC = () => {
             } else {
                 finishAssessment(newMessages);
             }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             setMessages(prev => [...prev, { role: 'assistant', content: "Hubo un pequeño error. ¿Podrías repetirme eso?" }]);
         }
     };
 
-    const finishAssessment = async (finalMessages: Message[]) => {
-        setLoadingResult(true);
-        try {
-            const currentStep = FLOW[chatStepIndex];
-            const response = await assessmentApi.submitChat(finalMessages, currentStep);
-            setResult(response.data);
-            setStep(2);
-        } catch (error) {
-            alert("Error al analizar la conversación.");
-        } finally {
-            setLoadingResult(false);
+    useEffect(() => {
+        if (step === 1 && messages.length === 0) {
+            loadGreeting();
         }
-    };
+        scrollToBottom();
+    }, [step, messages, isTyping]);
 
     const renderConsent = () => (
         <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in slide-in-from-bottom-4">
@@ -277,6 +281,7 @@ const Assessment: React.FC = () => {
                             <div className="mt-8 pt-8 border-t border-slate-100">
                                 <h3 className="text-sm font-bold text-slate-400 mb-4 uppercase text-center tracking-widest">Niveles Detectados</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {Object.entries(analysis.emociones_detectadas).map(([emo, val]: [string, any]) => (
                                         <div key={emo} className="text-center">
                                             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-2">

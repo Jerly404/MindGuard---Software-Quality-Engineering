@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]
@@ -11,7 +11,11 @@ select = [
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
 ]
-ignore = []
+ignore = [
+    "E501", # Line too long
+    "B008", # Do not perform function call `Depends` in argument defaults
+    "E701", # Multiple statements on one line (colon)
+]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -20,3 +24,4 @@ testpaths = [
     "tests",
 ]
 asyncio_mode = "auto"
+pythonpath = ["."]

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Shield, Activity, Users, UserPlus, Trash2, 
-    Mail, Briefcase, Hash, AlertCircle, RefreshCw, 
-    Search, Filter, CheckCircle2, XCircle
+    Mail, RefreshCw, 
+    Search, XCircle
 } from 'lucide-react';
 import { authApi } from '../services/api';
 
 const AdminDashboard: React.FC = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [allUsers, setAllUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'pacientes' | 'profesionales' | 'todos'>('pacientes');
@@ -17,16 +18,13 @@ const AdminDashboard: React.FC = () => {
     const [newPro, setNewPro] = useState({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         setLoading(true);
         try {
             const response = await authApi.getUsers();
             console.log("DATOS RECIBIDOS DEL BACKEND:", response.data);
             setAllUsers(response.data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("ERROR CARGANDO USUARIOS:", error);
             alert("Error al conectar con el servidor. Verifica tu conexión.");
@@ -35,12 +33,17 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        loadData();
+    }, []);
+
     const handleDelete = async (id: number, name: string) => {
         const confirm = window.confirm(`❗ ELIMINACIÓN PERMANENTE\n\n¿Seguro que quieres borrar a ${name}?\nTodos sus datos, historial y citas se perderán.`);
         if (confirm) {
             try {
                 await authApi.deleteUser(id);
                 setAllUsers(prev => prev.filter(u => u.id !== id));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 alert("No se pudo eliminar al usuario: " + (error.response?.data?.detail || "Error desconocido"));
             }
@@ -56,6 +59,7 @@ const AdminDashboard: React.FC = () => {
             setIsAddingPro(false);
             setNewPro({ nombre: '', email: '', password: '', colegiatura: '', especialidad: 'Psicología Clínica' });
             alert("✅ Profesional registrado con éxito.");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             alert(error.response?.data?.detail || "Error al registrar profesional");
         } finally {

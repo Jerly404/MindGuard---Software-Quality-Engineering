@@ -1,7 +1,18 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, CheckConstraint
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 Base = declarative_base()
 
@@ -15,7 +26,7 @@ class Usuario(Base):
     twoFactorEnabled = Column(Boolean, default=False)
     colegiatura = Column(String(50), nullable=True)
     especialidad = Column(String(100), nullable=True)
-    
+
     evaluaciones = relationship("Evaluacion", back_populates="usuario", cascade="all, delete-orphan")
     registros_emocionales = relationship("RegistroEmocional", back_populates="usuario", cascade="all, delete-orphan")
     transacciones = relationship("TransaccionMock", back_populates="usuario", cascade="all, delete-orphan", foreign_keys="TransaccionMock.id_usuario")
@@ -39,7 +50,7 @@ class Evaluacion(Base):
     notas_personales = Column(Text, nullable=True)
     has_high_risk = Column(Boolean, default=False)
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
-    
+
     usuario = relationship("Usuario", back_populates="evaluaciones")
     resultado_ia_detail = relationship("ResultadoIA", back_populates="evaluacion", uselist=False, cascade="all, delete-orphan")
 
@@ -51,7 +62,7 @@ class RegistroEmocional(Base):
     intensidad = Column(Integer)
     disparador = Column(String(200), nullable=True)
     id_usuario = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
-    
+
     usuario = relationship("Usuario", back_populates="registros_emocionales")
 
 class ResultadoIA(Base):
@@ -60,7 +71,7 @@ class ResultadoIA(Base):
     nivel = Column(String(10))
     scoreConfianza = Column(Float)
     id_evaluacion = Column(Integer, ForeignKey("Evaluacion.id", ondelete="CASCADE"), unique=True)
-    
+
     evaluacion = relationship("Evaluacion", back_populates="resultado_ia_detail")
     __table_args__ = (CheckConstraint(nivel.in_(['BAJO', 'MEDIO', 'ALTO']), name='check_nivel'),)
 
@@ -91,7 +102,7 @@ class TransaccionMock(Base):
     metodo_pago = Column(String(50), default="tarjeta")
     fecha = Column(DateTime, default=datetime.utcnow)
     estado = Column(String(50), default="completado")
-    
+
     usuario = relationship("Usuario", back_populates="transacciones", foreign_keys=[id_usuario])
 
 class Cita(Base):

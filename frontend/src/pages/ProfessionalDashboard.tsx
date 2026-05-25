@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Users, Calendar, Activity, 
-    Clock, ArrowRight, ExternalLink, 
-    CheckCircle2, AlertCircle, RefreshCw,
+    Clock, ExternalLink, RefreshCw,
     Send, Video, X
 } from 'lucide-react';
 import { premiumApi } from '../services/api';
@@ -21,10 +20,6 @@ const ProfessionalDashboard: React.FC = () => {
     const [scheduleDate, setScheduleDate] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         setLoading(true);
         try {
@@ -42,6 +37,10 @@ const ProfessionalDashboard: React.FC = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadData();
+    }, []);
 
     const sendLinkToPatient = (link: string, patientName: string) => {
         alert(`🚀 Link enviado a ${patientName}.\nLa sesión ya está activa en su panel.`);
@@ -72,7 +71,7 @@ const ProfessionalDashboard: React.FC = () => {
             setIsScheduleModalOpen(false);
             setScheduleDate('');
             loadData();
-        } catch (e) {
+        } catch {
             alert("Error al agendar la cita. Verifica que el paciente tenga premium activo.");
         } finally {
             setSubmitting(false);

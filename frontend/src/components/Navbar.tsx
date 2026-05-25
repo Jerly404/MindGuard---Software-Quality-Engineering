@@ -1,10 +1,9 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { Shield, LogOut, User as UserIcon } from 'lucide-react';
 
 const Navbar = ({ onLogout }: { onLogout: () => void }) => {
-    const navigate = useNavigate();
     const user = authApi.getCurrentUser();
 
     const handleLogout = () => {

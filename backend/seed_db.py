@@ -1,11 +1,13 @@
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from app.models.base import Usuario, Evaluacion
-from app.core.security import get_password_hash
-from app.core.config import settings
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models.base import Evaluacion, Usuario
 
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
 SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
@@ -15,7 +17,7 @@ async def seed():
         # 1. Crear usuario admin si no existe
         result = await db.execute(select(Usuario).where(Usuario.email == "admin@mindguard.ai"))
         user = result.scalars().first()
-        
+
         if not user:
             user = Usuario(
                 nombre="Administrador",
@@ -27,7 +29,7 @@ async def seed():
             await db.commit()
             await db.refresh(user)
             print("Usuario admin creado.")
-        
+
         # 2. Crear profesional de prueba
         result_pro = await db.execute(select(Usuario).where(Usuario.email == "psicologo@mindguard.ai"))
         if not result_pro.scalars().first():

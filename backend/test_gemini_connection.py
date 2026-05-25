@@ -1,13 +1,14 @@
-import os
-from dotenv import load_dotenv
 import asyncio
+import os
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
 async def test_gemini():
     api_key = os.getenv("GOOGLE_API_KEY")
     print(f"Probando con API Key: {api_key[:10]}...")
-    
+
     try:
         from google import genai
         client = genai.Client(api_key=api_key)

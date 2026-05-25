@@ -1,6 +1,8 @@
-from typing import Optional, List, Dict
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel
+
 
 class EvaluationBase(BaseModel):
     phq9Score: int

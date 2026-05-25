@@ -1,6 +1,9 @@
-from groq import Groq
-from app.core.config import settings
 import json
+
+from groq import Groq
+
+from app.core.config import settings
+
 
 class AIService:
     def __init__(self):

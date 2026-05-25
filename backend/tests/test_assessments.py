@@ -1,12 +1,13 @@
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
-from app.main import app
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.api.deps import get_db
-from app.models.base import Base, Usuario
 from app.core import security
+from app.main import app
+from app.models.base import Base, Usuario
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test_assessments.db"
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -36,10 +37,10 @@ async def test_create_evaluation():
         await db.commit()
         await db.refresh(user)
         user_id = user.id
-        
+
     token = security.create_access_token(user_id)
     headers = {"Authorization": f"Bearer {token}"}
-    
+
     # 2. Submit evaluation
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post(
@@ -47,7 +48,7 @@ async def test_create_evaluation():
             headers=headers,
             json={"phq9Score": 10, "gad7Score": 5, "text_input": "I have been feeling very sad and anxious lately."},
         )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["phq9Score"] == 10
@@ -68,9 +69,9 @@ async def test_get_evaluations():
 
     token = security.create_access_token(user_id)
     headers = {"Authorization": f"Bearer {token}"}
-    
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get("/api/v1/assessments/me", headers=headers)
-    
+
     assert response.status_code == 200
     assert len(response.json()) >= 1

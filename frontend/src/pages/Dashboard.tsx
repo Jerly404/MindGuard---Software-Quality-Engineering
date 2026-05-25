@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-    Activity, History, Shield, Brain, Calendar, 
-    Zap, Sparkles, MessageSquare, ExternalLink, RefreshCw,
+    Activity, Brain, Calendar, 
+    Zap, Sparkles, ExternalLink,
     X, Moon, Sun, Wind, CheckCircle, Music, Film, Coffee
 } from 'lucide-react';
 import api, { assessmentApi, premiumApi } from '../services/api';
@@ -10,30 +10,29 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import BreathingExercise from '../components/BreathingExercise';
 import yapeQR from '../assets/yape-qr.png';
 
+interface Appointment {
+    id: number;
+    fecha: string;
+    estado: string;
+    link: string;
+    con?: string;
+}
+
 const Dashboard: React.FC = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [history, setHistory] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [assignment, setAssignment] = useState<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [professionals, setProfessionals] = useState<any[]>([]);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedPro, setSelectedPro] = useState<any>(null);
     const [paymentMethod, setPaymentMethod] = useState<'yape' | 'paypal' | null>(null);
-    const [appointments, setAppointments] = useState<any[]>([]);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [showBreathing, setShowBreathing] = useState(false);
 
-    useEffect(() => {
-        loadData();
-        const dataInterval = setInterval(loadData, 30000);
-        return () => clearInterval(dataInterval);
-    }, []);
-
-    useEffect(() => {
-        const timer = setInterval(checkAutoOpenLink, 30000);
-        return () => clearInterval(timer);
-    }, [appointments]);
-
     const loadData = async () => {
-        setLoading(true);
         try {
             const [histRes, asigRes, proRes, appoRes] = await Promise.all([
                 assessmentApi.getHistory(),
@@ -45,14 +44,13 @@ const Dashboard: React.FC = () => {
             setAssignment(asigRes.data);
             setProfessionals(proRes.data);
             setAppointments(appoRes.data);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
-            console.error("Dashboard Load Error:", e);
-        } finally {
-            setLoading(false);
+            // console.error("Dashboard Load Error:", e);
         }
     };
 
-    const checkAutoOpenLink = () => {
+    const checkAutoOpenLink = useCallback(() => {
         const now = new Date();
         appointments.forEach(app => {
             if (app.estado !== 'programada') return;
@@ -65,7 +63,18 @@ const Dashboard: React.FC = () => {
                 app.estado = 'en_curso';
             }
         });
-    };
+    }, [appointments]);
+
+    useEffect(() => {
+        loadData();
+        const dataInterval = setInterval(loadData, 30000);
+        return () => clearInterval(dataInterval);
+    }, []);
+
+    useEffect(() => {
+        const timer = setInterval(checkAutoOpenLink, 30000);
+        return () => clearInterval(timer);
+    }, [appointments]);
 
     const handleYapePayment = async () => {
         try {
@@ -73,7 +82,7 @@ const Dashboard: React.FC = () => {
             alert(res.data.mensaje);
             setIsPaymentModalOpen(false);
             loadData();
-        } catch (e) {
+        } catch {
             alert("Error al procesar el pago");
         }
     };
@@ -272,7 +281,7 @@ const Dashboard: React.FC = () => {
                                                             await premiumApi.payAndAssign(pro.id, 0, 'prueba');
                                                             alert("✅ Prueba de 1 día activada. ¡Bienvenido!");
                                                             loadData();
-                                                        } catch (e) {
+                                                        } catch {
                                                             alert("Error al activar la prueba");
                                                         }
                                                     }}

@@ -1,15 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional, Any
-from pydantic import BaseModel
-from datetime import datetime, timedelta
-from sqlalchemy import func
 import random
 import uuid
+from datetime import datetime, timedelta
+from typing import List, Optional
 
-from app.api.deps import get_db, get_current_user
-from app.models.base import Usuario, AsignacionProfesional, TransaccionMock, Evaluacion, Cita
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
+from app.api.deps import get_current_user, get_db
+from app.models.base import (
+    AsignacionProfesional,
+    Cita,
+    Evaluacion,
+    TransaccionMock,
+    Usuario,
+)
 
 router = APIRouter()
 
@@ -26,21 +33,21 @@ async def create_appointment(
 ):
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Solo profesionales pueden agendar citas")
-    
+
     # Verificar que el paciente tenga alguna asignación activa (es premium)
     stmt = select(AsignacionProfesional).where(
         AsignacionProfesional.id_paciente == request.id_paciente,
-        AsignacionProfesional.activa == True
+        AsignacionProfesional.activa
     )
     result = await db.execute(stmt)
     asignacion = result.scalars().first()
     if not asignacion:
         raise HTTPException(status_code=403, detail="El paciente no tiene una suscripción premium activa")
 
-    # Si el profesional que crea la cita no es el asignado originalmente, 
+    # Si el profesional que crea la cita no es el asignado originalmente,
     # opcionalmente podríamos actualizar la asignación o simplemente permitirlo.
     # Para mayor flexibilidad (especialmente en pruebas), permitimos que cualquier profesional atienda.
-    
+
     # GENERAR LINK ÚNICO PARA ESTA CITA
     # Usamos Jitsi Meet porque permite crear salas persistentes mediante la URL
     room_id = f"MindGuard-{uuid.uuid4().hex[:12]}"
@@ -71,10 +78,10 @@ async def get_my_appointments(
         stmt = select(Cita, Usuario.nombre.label("otro_nombre")).join(
             Usuario, Cita.id_profesional == Usuario.id
         ).where(Cita.id_paciente == current_user.id).order_by(Cita.fecha_cita.asc())
-        
+
     result = await db.execute(stmt)
     rows = result.all()
-    
+
     return [
         {
             "id": row[0].id,
@@ -129,15 +136,15 @@ async def simulate_payment_and_assign(
             estado="completado"
         )
         db.add(transaccion)
-        
+
         q = select(AsignacionProfesional).where(
             AsignacionProfesional.id_paciente == current_user.id,
-            AsignacionProfesional.activa == True
+            AsignacionProfesional.activa
         )
         res_old = await db.execute(q)
         for old in res_old.scalars().all():
             old.activa = False
-        
+
         nueva_asig = AsignacionProfesional(
             id_paciente=current_user.id,
             id_profesional=request.id_profesional,
@@ -156,7 +163,7 @@ async def simulate_payment_and_assign(
         )
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.get("/my-assignment")
 async def get_my_assignment(
@@ -165,14 +172,14 @@ async def get_my_assignment(
 ):
     result = await db.execute(select(AsignacionProfesional).filter(
         AsignacionProfesional.id_paciente == current_user.id,
-        AsignacionProfesional.activa == True
+        AsignacionProfesional.activa
     ))
     asig = result.scalars().first()
     if not asig: return None
-    
+
     res_pro = await db.execute(select(Usuario).filter(Usuario.id == asig.id_profesional))
     pro = res_pro.scalars().first()
-    
+
     return {
         "profesional": pro.nombre if pro else "Especialista",
         "fecha_inicio": asig.fecha_inicio,
@@ -186,10 +193,10 @@ async def get_assigned_patients(
 ):
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
-    
+
     stmt = select(Usuario).join(AsignacionProfesional, Usuario.id == AsignacionProfesional.id_paciente).where(
         AsignacionProfesional.id_profesional == current_user.id,
-        AsignacionProfesional.activa == True
+        AsignacionProfesional.activa
     )
     result = await db.execute(stmt)
     return [{"id": p.id, "nombre": p.nombre, "email": p.email, "riesgo": "Estable"} for p in result.scalars().all()]
@@ -201,7 +208,7 @@ async def get_earnings(
 ):
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
-    
+
     stmt = select(func.sum(TransaccionMock.monto)).where(
         TransaccionMock.id_profesional == current_user.id
     )

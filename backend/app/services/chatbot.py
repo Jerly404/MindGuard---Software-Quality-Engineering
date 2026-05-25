@@ -1,7 +1,9 @@
+from typing import Dict, List
+
 from groq import Groq
-from typing import List, Dict, Optional
+
 from app.core.config import settings
-import json
+
 
 class MentalHealthChatbot:
     def __init__(self):
@@ -61,7 +63,7 @@ class MentalHealthChatbot:
                     "response": q["text"],
                     "options": q["options"]
                 }
-        
+
         # Si ya terminó las preguntas, pasamos a modo psicólogo
         return await self._get_free_response(messages)
 
@@ -75,7 +77,7 @@ class MentalHealthChatbot:
             history = [{"role": "system", "content": prompt}]
             for m in messages:
                 history.append({"role": m["role"], "content": m["content"]})
-            
+
             completion = self.client.chat.completions.create(
                 model=self.model_id,
                 messages=history,
@@ -83,7 +85,7 @@ class MentalHealthChatbot:
                 max_tokens=250
             )
             return {"response": completion.choices[0].message.content, "options": []}
-        except:
+        except Exception:
             return {"response": "Entiendo. Cuéntame más sobre eso...", "options": []}
 
 chatbot_service = MentalHealthChatbot()

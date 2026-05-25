@@ -1,12 +1,12 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.core.config import settings
-from app.models.base import Base
-from app.api import deps
-from contextlib import asynccontextmanager
 
-from app.api import auth, assessments, premium
+from app.api import assessments, auth, premium
+from app.core.config import settings
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
