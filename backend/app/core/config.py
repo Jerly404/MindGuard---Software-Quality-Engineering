@@ -10,9 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-super-secret-key-for-dev-only"  # Change in production
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    SQLALCHEMY_DATABASE_URL: str = Field(
-        "sqlite+aiosqlite:///./mindguard.db", validation_alias="DATABASE_URL"
-    )
+    SQLALCHEMY_DATABASE_URL: str = Field("sqlite+aiosqlite:///./mindguard.db", validation_alias="DATABASE_URL")
     GOOGLE_API_KEY: Optional[str] = Field(None, validation_alias="GOOGLE_API_KEY")
     GROQ_API_KEY: Optional[str] = Field(None, validation_alias="GROQ_API_KEY")
 

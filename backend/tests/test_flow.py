@@ -83,5 +83,7 @@ async def test_full_user_flow():
         assert history_response.status_code == 200
         assert len(history_response.json()) >= 1
         assert history_response.json()[0]["phq9Score"] == 5
-        print(f"   <- Respuesta Servidor (200 OK): Se encontro {len(history_response.json())} registro(s) en el historial.")
+        print(
+            f"   <- Respuesta Servidor (200 OK): Se encontro {len(history_response.json())} registro(s) en el historial."
+        )
         print("=" * 50 + "\n")

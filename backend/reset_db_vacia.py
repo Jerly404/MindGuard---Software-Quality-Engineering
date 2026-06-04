@@ -11,6 +11,7 @@ from app.models.base import Base, Usuario
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
 SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
+
 async def reset_db_vacia():
     async with engine.begin() as conn:
         # CUIDADO: Esto borrará todo si las tablas ya existen y las recreamos,
@@ -33,6 +34,7 @@ async def reset_db_vacia():
         print(f"Usuario admin creado ({admin_email}).")
 
     print("Base de datos reseteada y lista con solo el admin.")
+
 
 if __name__ == "__main__":
     asyncio.run(reset_db_vacia())
