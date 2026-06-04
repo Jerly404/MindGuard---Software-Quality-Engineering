@@ -1,12 +1,12 @@
 import asyncio
-from sqlalchemy import select
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.base import Base, Usuario
 
-# Forzamos SQLite local para el reset manual si es necesario, 
+# Forzamos SQLite local para el reset manual si es necesario,
 # o usamos la URL de configuración.
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
 SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
