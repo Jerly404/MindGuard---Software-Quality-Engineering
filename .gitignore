@@ -27,7 +27,7 @@ node_modules/
 frontend/dist/
 
 # Databases
-# backend/*.db  <-- Comentado para que se suban si quieres mantener los datos actuales
+backend/*.db
 
 # Logs
 *.log
