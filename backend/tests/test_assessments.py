@@ -3,6 +3,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from unittest.mock import patch, AsyncMock
 
 from app.api.deps import get_db
 from app.core import security
@@ -10,7 +11,7 @@ from app.main import app
 from app.models.base import Base, Usuario
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test_assessments.db"
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
 TestingSessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False
 )

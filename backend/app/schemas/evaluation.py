@@ -34,8 +34,7 @@ class Evaluation(EvaluationBase):
     has_high_risk: bool = False
     analisis_detallado: Optional[DetailedAIAnalysis] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class EvaluationResult(BaseModel):

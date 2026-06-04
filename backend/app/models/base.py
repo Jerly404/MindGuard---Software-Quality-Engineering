@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -11,10 +11,11 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, relationship
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 class Usuario(Base):
@@ -54,7 +55,7 @@ class Cuestionario(Base):
 class Evaluacion(Base):
     __tablename__ = "Evaluacion"
     id = Column(Integer, primary_key=True, index=True)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=lambda: datetime.now(UTC))
     phq9Score = Column(Integer)
     gad7Score = Column(Integer)
     nivelRiesgo = Column(String(50))
@@ -72,7 +73,7 @@ class Evaluacion(Base):
 class RegistroEmocional(Base):
     __tablename__ = "RegistroEmocional"
     id = Column(Integer, primary_key=True, index=True)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=lambda: datetime.now(UTC))
     emocion_principal = Column(String(50))
     intensidad = Column(Integer)
     disparador = Column(String(200), nullable=True)
@@ -105,7 +106,7 @@ class AsignacionProfesional(Base):
     id = Column(Integer, primary_key=True, index=True)
     id_paciente = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
     id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=False)
-    fecha_inicio = Column(DateTime, default=datetime.utcnow)
+    fecha_inicio = Column(DateTime, default=lambda: datetime.now(UTC))
     activa = Column(Boolean, default=True)
 
     paciente = relationship("Usuario", foreign_keys=[id_paciente])
@@ -119,7 +120,7 @@ class TransaccionMock(Base):
     id_profesional = Column(Integer, ForeignKey("Usuario.id", ondelete="CASCADE"), nullable=True)
     monto = Column(Float, nullable=False)
     metodo_pago = Column(String(50), default="tarjeta")
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=lambda: datetime.now(UTC))
     estado = Column(String(50), default="completado")
 
     usuario = relationship("Usuario", back_populates="transacciones", foreign_keys=[id_usuario])
@@ -134,7 +135,7 @@ class Cita(Base):
     link_reunion = Column(String(255), nullable=True)
     mensaje_seguimiento = Column(Text, nullable=True)
     estado = Column(String(20), default="programada")
-    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_creacion = Column(DateTime, default=lambda: datetime.now(UTC))
 
     paciente = relationship("Usuario", foreign_keys=[id_paciente], back_populates="citas_como_paciente")
     profesional = relationship("Usuario", foreign_keys=[id_profesional], back_populates="citas_como_profesional")

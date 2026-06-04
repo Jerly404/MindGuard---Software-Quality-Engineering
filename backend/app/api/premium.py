@@ -1,6 +1,6 @@
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -103,8 +103,7 @@ class ProfessionalSchema(BaseModel):
     nombre: str
     email: str
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class PaymentRequest(BaseModel):
@@ -133,7 +132,7 @@ async def simulate_payment_and_assign(
 ):
     try:
         # Cambio: de 2 días a 1 día para la prueba
-        expiracion = datetime.utcnow() + (timedelta(days=1) if request.metodo == "prueba" else timedelta(days=30))
+        expiracion = datetime.now(UTC) + (timedelta(days=1) if request.metodo == "prueba" else timedelta(days=30))
         transaccion = TransaccionMock(
             id_usuario=current_user.id,
             id_profesional=request.id_profesional,
@@ -153,7 +152,7 @@ async def simulate_payment_and_assign(
         nueva_asig = AsignacionProfesional(
             id_paciente=current_user.id,
             id_profesional=request.id_profesional,
-            fecha_inicio=datetime.utcnow(),
+            fecha_inicio=datetime.now(UTC),
             activa=True,
         )
         db.add(nueva_asig)

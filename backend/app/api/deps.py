@@ -11,7 +11,11 @@ from app.core.config import settings
 from app.models.base import Usuario
 from app.schemas.user import TokenPayload
 
-engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+connect_args = {}
+if settings.SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
+engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 SessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False
 )

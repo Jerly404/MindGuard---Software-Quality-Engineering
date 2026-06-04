@@ -25,8 +25,7 @@ class User(UserBase):
     id: int
     twoFactorEnabled: bool
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class Token(BaseModel):

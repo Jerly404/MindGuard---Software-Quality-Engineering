@@ -8,7 +8,7 @@ from app.main import app
 from app.models.base import Base
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
 TestingSessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=engine, class_=AsyncSession, expire_on_commit=False
 )

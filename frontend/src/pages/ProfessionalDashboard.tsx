@@ -38,7 +38,7 @@ const ProfessionalDashboard: React.FC = () => {
         }
     }, []);
 
-    const sendLinkToPatient = (link: string, patientName: string) => {
+    const sendLinkToPatient = (_link: string, patientName: string) => {
         alert(`🚀 Link enviado a ${patientName}.\nLa sesión ya está activa en su panel.`);
     };
 

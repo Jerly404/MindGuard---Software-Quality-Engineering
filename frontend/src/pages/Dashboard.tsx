@@ -344,7 +344,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                             )}
                             {paymentMethod === 'paypal' && (
-                                <PayPalScriptProvider options={{ "client-id": "test" }}>
+                                <PayPalScriptProvider options={{ clientId: "test" }}>
                                     <PayPalButtons style={{ layout: "vertical" }} onApprove={async () => {
                                         await premiumApi.payAndAssign(selectedPro.id, 5, 'paypal');
                                         setIsPaymentModalOpen(false);

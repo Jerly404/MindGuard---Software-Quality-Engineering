@@ -1,0 +1,14 @@
+node_modules
+venv
+.venv
+__pycache__
+.git
+dist
+.pytest_cache
+.ruff_cache
+backend/venv
+backend/.venv
+frontend/node_modules
+backend/*.db
+backend/*.html
+frontend/test-results
