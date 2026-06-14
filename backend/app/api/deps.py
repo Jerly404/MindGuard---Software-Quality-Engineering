@@ -35,8 +35,9 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
         token_data = TokenPayload(**payload)
     except (jwt.JWTError, ValidationError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         ) from None
 
     result = await db.execute(select(Usuario).where(Usuario.id == token_data.sub))

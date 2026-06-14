@@ -1,4 +1,7 @@
+import pytest
 from app.api.assessments import level_to_score
+
+pytestmark = pytest.mark.unit
 
 
 def test_level_to_score_mapping():

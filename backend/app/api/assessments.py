@@ -27,7 +27,7 @@ class ChatSession(BaseModel):
 
 
 def level_to_score(level: str) -> int:
-    level = str(level).lower()
+    level = str(level).strip().lower()
     if "alto" in level or "grave" in level:
         return 18
     if "medio" in level or "moderado" in level:
@@ -118,6 +118,16 @@ async def chat_evaluation(
         }
 
 
+def calculate_overall_risk(phq9_score: int, gad7_score: int) -> str:
+    """Calcula el nivel de riesgo combinado a partir de PHQ-9 y GAD-7."""
+    combined = phq9_score + gad7_score
+    if combined <= 5:
+        return "Bajo"
+    if combined <= 15:
+        return "Medio"
+    return "Alto"
+
+
 @router.post("/", response_model=Evaluation)
 async def create_evaluation(
     *,
@@ -125,13 +135,14 @@ async def create_evaluation(
     evaluation_in: EvaluationCreate,
     current_user: Usuario = Depends(deps.get_current_user),
 ) -> Any:
-    ai_result = await ai_service.analyze_text(evaluation_in.text_input)
+    ai_result = await ai_service.analyze_text(evaluation_in.text_input or "")
+    nivel_riesgo = calculate_overall_risk(evaluation_in.phq9Score, evaluation_in.gad7Score)
     db_obj = Evaluacion(
         phq9Score=evaluation_in.phq9Score,
         gad7Score=evaluation_in.gad7Score,
-        nivelRiesgo="Leve",
-        resultadoIA=ai_result["interpretacion"],
-        has_high_risk=ai_result.get("has_alert", False),
+        nivelRiesgo=nivel_riesgo,
+        resultadoIA=ai_result.get("interpretacion", "Evaluación completada"),
+        has_high_risk=ai_result.get("has_alert", False) or nivel_riesgo.lower() == "alto",
         notas_personales=evaluation_in.text_input,
         id_usuario=current_user.id,
     )
