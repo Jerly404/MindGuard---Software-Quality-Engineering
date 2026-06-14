@@ -6,6 +6,8 @@ from app.schemas.evaluation import EvaluationCreate
 from app.services.chatbot import chatbot_service
 from app.services.clinical import ai_service
 
+pytestmark = pytest.mark.unit
+
 
 def test_phq9_logic_bounds():
     """Verifica que el sistema maneje correctamente los límites de puntajes PHQ-9"""

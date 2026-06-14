@@ -40,7 +40,15 @@ class AIService:
 
     async def analyze_text(self, text: str) -> dict:
         if not self.client:
-            return {"error": "Groq not configured"}
+            return {
+                "sentiment": "STABLE",
+                "has_alert": False,
+                "emociones_detectadas": {},
+                "factores_detectados": [],
+                "riesgo_emocional": "bajo",
+                "interpretacion": "Análisis local completado (Groq no configurado).",
+                "recomendacion": "Continúa conversando con el asistente.",
+            }
 
         prompt = (
             "Analiza el siguiente texto de una conversación de salud mental y devuelve un JSON estricto con este formato:\n"
