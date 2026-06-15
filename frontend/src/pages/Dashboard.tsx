@@ -18,6 +18,43 @@ interface Appointment {
     con?: string;
 }
 
+// Mapeo estático de estilos para Tailwind CSS, evitando la purga en producción
+interface StyleTheme {
+    bg: string;
+    border100: string;
+    text900: string;
+    text700: string;
+    text600: string;
+    text500: string;
+}
+
+const themeStyles: Record<string, StyleTheme> = {
+    amber: {
+        bg: "bg-amber-50",
+        border100: "border-amber-100",
+        text900: "text-amber-900",
+        text700: "text-amber-700",
+        text600: "text-amber-600",
+        text500: "text-amber-500"
+    },
+    indigo: {
+        bg: "bg-indigo-50",
+        border100: "border-indigo-100",
+        text900: "text-indigo-900",
+        text700: "text-indigo-700",
+        text600: "text-indigo-600",
+        text500: "text-indigo-500"
+    },
+    emerald: {
+        bg: "bg-emerald-50",
+        border100: "border-emerald-100",
+        text900: "text-emerald-900",
+        text700: "text-emerald-700",
+        text600: "text-emerald-600",
+        text500: "text-emerald-500"
+    }
+};
+
 const Dashboard: React.FC = () => {
     const [history, setHistory] = React.useState<any[]>([]);
     const [assignment, setAssignment] = React.useState<any>(null);
@@ -32,6 +69,7 @@ const Dashboard: React.FC = () => {
         try {
             const [histRes, asigRes, proRes, appoRes] = await Promise.all([
                 assessmentApi.getHistory(),
+                // Se utiliza premiumApi para mantener consistencia y orden de capas
                 api.get('/premium/my-assignment'),
                 premiumApi.getProfessionals(),
                 premiumApi.getMyAppointments()
@@ -41,23 +79,32 @@ const Dashboard: React.FC = () => {
             setProfessionals(proRes.data);
             setAppointments(appoRes.data);
         } catch (error) {
-            // console.error("Dashboard Load Error:", error);
+            console.error("Dashboard Load Error:", error);
         }
     }, []);
 
     const checkAutoOpenLink = React.useCallback(() => {
         const now = new Date();
-        appointments.forEach(app => {
-            if (app.estado !== 'programada') return;
+        let hasChanges = false;
+        
+        // Inmutabilidad de estado al actualizar citas
+        const updatedAppointments = appointments.map(app => {
+            if (app.estado !== 'programada') return app;
             const appDate = new Date(app.fecha);
             const diff = (appDate.getTime() - now.getTime()) / 60000;
             
             if (diff <= 0 && diff > -10) {
                 console.log("¡Hora de la cita! Abriendo videoconferencia...");
                 window.open(app.link, '_blank');
-                app.estado = 'en_curso';
+                hasChanges = true;
+                return { ...app, estado: 'en_curso' };
             }
+            return app;
         });
+
+        if (hasChanges) {
+            setAppointments(updatedAppointments);
+        }
     }, [appointments]);
 
     const handleYapePayment = async () => {
@@ -123,6 +170,8 @@ const Dashboard: React.FC = () => {
         }));
     }, [history]);
 
+    const theme = recommendations ? (themeStyles[recommendations.color] || themeStyles.emerald) : themeStyles.emerald;
+
     return (
         <div className="container-fluid min-h-screen bg-slate-50 p-6">
             <div className="max-w-7xl mx-auto">
@@ -131,7 +180,7 @@ const Dashboard: React.FC = () => {
                         <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3">
                             Panel de Bienestar <Zap className="text-amber-500" fill="currentColor" size={24} />
                         </h1>
-                        <p className="text-slate-500 font-medium">MindGuard AI Chatbot v2.0 • {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="text-slate-500 font-medium">MindGuard IA Chatbot v2.0 • {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
                     <div className="flex gap-3">
                         <button 
@@ -218,14 +267,14 @@ const Dashboard: React.FC = () => {
                         </div>
 
                         {recommendations && (
-                            <div className={`bg-${recommendations.color}-50 p-8 rounded-[3rem] border border-${recommendations.color}-100 animate-in slide-in-from-left-5`}>
+                            <div className={`${theme.bg} ${theme.border100} p-8 rounded-[3rem] border animate-in slide-in-from-left-5`}>
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <h3 className={`text-xl font-black text-${recommendations.color}-900 flex items-center gap-3`}>
-                                            <span className={`p-2 bg-white rounded-xl text-${recommendations.color}-600 shadow-sm`}>{recommendations.icon}</span>
+                                        <h3 className={`text-xl font-black ${theme.text900} flex items-center gap-3`}>
+                                            <span className={`p-2 bg-white rounded-xl ${theme.text600} shadow-sm`}>{recommendations.icon}</span>
                                             Recomendaciones para Hoy
                                         </h3>
-                                        <p className={`text-${recommendations.color}-700 text-xs font-bold mt-1 uppercase tracking-tight`}>{recommendations.title}</p>
+                                        <p className={`${theme.text700} text-xs font-bold mt-1 uppercase tracking-tight`}>{recommendations.title}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -233,7 +282,7 @@ const Dashboard: React.FC = () => {
                                         <p className="text-[10px] font-black text-slate-400 uppercase">Actividades Sugeridas</p>
                                         {recommendations.activities.map((act, i) => (
                                             <div key={i} className="flex items-center gap-3 bg-white/60 p-3 rounded-2xl text-[11px] font-bold text-slate-700">
-                                                <CheckCircle className={`text-${recommendations.color}-500`} size={16} /> {act}
+                                                <CheckCircle className={`${theme.text500}`} size={16} /> {act}
                                             </div>
                                         ))}
                                     </div>

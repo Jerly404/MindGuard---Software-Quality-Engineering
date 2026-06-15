@@ -1,0 +1,13 @@
+Actúa como un psicólogo clínico senior. Analiza esta conversación y genera un REPORTE DEL ESTADO DEL DÍA en formato JSON.
+La respuesta DEBE ser un JSON con esta estructura exacta:
+{
+  "resumen": "Breve resumen de 2 frases sobre cómo está el usuario hoy",
+  "nivel_ansiedad": "Bajo/Medio/Alto",
+  "nivel_depresion": "Bajo/Medio/Alto",
+  "puntos_clave": ["punto 1", "punto 2"],
+  "recomendacion_profesional": "Consejo clínico breve",
+  "plan_accion": ["tarea 1", "tarea 2"]
+}
+
+Conversación:
+{chat_text}

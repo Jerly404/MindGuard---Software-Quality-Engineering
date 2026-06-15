@@ -1,48 +1,41 @@
+import os
 from datetime import timedelta
-from typing import Any, List
+from typing import Any, List, Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.models.base import Usuario
-from app.schemas.user import Msg, NewPassword, Token, User, UserCreate
+from app.schemas.user import Msg, NewPassword, Token, User, UserCreate, UserSignup
 from app.services.email import email_service
+from app.services.business_services import UserService
 
 router = APIRouter()
 
-
 @router.post("/password-recovery/{email}", response_model=Msg)
-async def recover_password(email: str, db: AsyncSession = Depends(deps.get_db)) -> Any:
+async def recover_password(
+    email: str,
+    user_service: Annotated[UserService, Depends(deps.get_user_service)]
+) -> Any:
     """
     Password recovery
     """
-    result = await db.execute(select(Usuario).where(Usuario.email == email))
-    user = result.scalars().first()
+    user = await user_service.get_by_email(email)
 
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system.",
-        )
-    password_reset_token = security.create_password_reset_token(email=email)
-    email_sent = await email_service.send_recovery_email(email_to=user.email, token=password_reset_token)
-    if not email_sent:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to send recovery email. Check server logs for the recovery code.",
-        )
+    # Evitamos la enumeración de usuarios: siempre respondemos con éxito
+    if user:
+        password_reset_token = security.create_password_reset_token(email=email)
+        await email_service.send_recovery_email(email_to=user.email, token=password_reset_token)
+
     return {"msg": "Password recovery email sent"}
-
 
 @router.post("/reset-password/", response_model=Msg)
 async def reset_password(
     new_password: NewPassword,
-    db: AsyncSession = Depends(deps.get_db),
+    user_service: Annotated[UserService, Depends(deps.get_user_service)],
 ) -> Any:
     """
     Reset password
@@ -51,9 +44,7 @@ async def reset_password(
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
 
-    result = await db.execute(select(Usuario).where(Usuario.email == email))
-    user = result.scalars().first()
-
+    user = await user_service.get_by_email(email)
     if not user:
         raise HTTPException(
             status_code=404,
@@ -61,56 +52,74 @@ async def reset_password(
         )
 
     user.password_hash = security.get_password_hash(new_password.new_password)
-    db.add(user)
-    await db.commit()
+    # Guardamos los cambios usando la base de datos indirectamente (a través de commit de SQLAlchemy)
+    # Para mantener la cohesión, el servicio o el commit directo se encarga
+    # Aquí como manejamos base.py directamente podemos realizar commit o delegar
+    await user_service.repo.create(user) # UserRepository.create realiza commit & refresh
     return {"msg": "Password updated successfully"}
-
 
 @router.post("/login/access-token", response_model=Token)
 async def login_access_token(
-    db: AsyncSession = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    response: Response,
+    user_service: Annotated[UserService, Depends(deps.get_user_service)],
+    form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
-    result = await db.execute(select(Usuario).where(Usuario.email == form_data.username))
-    user = result.scalars().first()
+    user = await user_service.get_by_email(form_data.username)
 
-    if not user or not security.verify_password(form_data.password, user.password_hash):
+    # Evitamos side-channel attacks y user enumeration
+    dummy_hash = "$2b$12$eImiTXuWV5j7ae9D.aW.D.mB9Bv1tK/H0Fq1i6P7Y8s9d0f1g2h3i"
+    valid = False
+    if user:
+        valid = security.verify_password(form_data.password, user.password_hash)
+    else:
+        security.verify_password(form_data.password, dummy_hash)
+
+    if not user or not valid:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token = security.create_access_token(user.id, role=user.rol, expires_delta=access_token_expires)
+
+    # Configuración de Cookie Segura HttpOnly
+    is_secure = os.getenv("ENV") == "production"
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=is_secure,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+
     return {
-        "access_token": security.create_access_token(user.id, role=user.rol, expires_delta=access_token_expires),
+        "access_token": token,
         "token_type": "bearer",
     }
 
+@router.post("/logout", response_model=Msg)
+async def logout(response: Response) -> Any:
+    response.delete_cookie(key="access_token")
+    return {"msg": "Successfully logged out"}
 
 @router.post("/signup", response_model=User)
-async def create_user(*, db: AsyncSession = Depends(deps.get_db), user_in: UserCreate) -> Any:
-    result = await db.execute(select(Usuario).where(Usuario.email == user_in.email))
-    user = result.scalars().first()
-
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
-    db_obj = Usuario(
-        email=user_in.email,
-        password_hash=security.get_password_hash(user_in.password),
+async def create_user(
+    *, 
+    user_service: Annotated[UserService, Depends(deps.get_user_service)], 
+    user_in: UserSignup
+) -> Any:
+    # El rol "usuario" es forzado dentro de signup_user
+    return await user_service.signup_user(
         nombre=user_in.nombre,
-        rol=user_in.rol,
+        email=user_in.email,
+        password=user_in.password
     )
-    db.add(db_obj)
-    await db.commit()
-    await db.refresh(db_obj)
-    return db_obj
-
 
 @router.post("/create-professional", response_model=User)
 async def create_professional(
     *,
-    db: AsyncSession = Depends(deps.get_db),
+    user_service: Annotated[UserService, Depends(deps.get_user_service)],
     user_in: UserCreate,
-    current_user: Usuario = Depends(deps.get_current_user),
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)],
 ) -> Any:
     """Permite a un administrador crear una cuenta de profesional."""
     if current_user.rol not in ["admin", "administrador"]:
@@ -119,59 +128,31 @@ async def create_professional(
             detail="No tienes permisos suficientes para realizar esta acción.",
         )
 
-    result = await db.execute(select(Usuario).where(Usuario.email == user_in.email))
-    user = result.scalars().first()
-
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="Ya existe un usuario con este correo electrónico.",
-        )
-
-    db_obj = Usuario(
-        email=user_in.email,
-        password_hash=security.get_password_hash(user_in.password),
-        nombre=user_in.nombre,
-        rol="profesional",
-        colegiatura=user_in.colegiatura,
-        especialidad=user_in.especialidad,
-    )
-    db.add(db_obj)
-    await db.commit()
-    await db.refresh(db_obj)
-    return db_obj
-
+    return await user_service.create_professional(user_in)
 
 @router.get("/users/", response_model=List[User])
 async def read_users(
-    db: AsyncSession = Depends(deps.get_db), current_user: Usuario = Depends(deps.get_current_user)
+    user_service: Annotated[UserService, Depends(deps.get_user_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
 ) -> Any:
     """Listar todos los usuarios (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    result = await db.execute(select(Usuario))
-    return result.scalars().all()
-
+    return await user_service.list_all()
 
 @router.delete("/users/{user_id}/", response_model=Msg)
 async def delete_user(
-    user_id: int, db: AsyncSession = Depends(deps.get_db), current_user: Usuario = Depends(deps.get_current_user)
+    user_id: int,
+    user_service: Annotated[UserService, Depends(deps.get_user_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
 ) -> Any:
     """Eliminar un usuario (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    result = await db.execute(select(Usuario).where(Usuario.id == user_id))
-    user = result.scalars().first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # No permitir que el admin se borre a sí mismo accidentalmente
-    if user.id == current_user.id:
+    if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete current admin user")
 
-    await db.delete(user)
-    await db.commit()
+    await user_service.delete_user(user_id)
     return {"msg": "User deleted successfully"}

@@ -1,102 +1,24 @@
-import random
-import uuid
-from datetime import UTC, datetime, timedelta
-from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+from typing import List, Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import func
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
-from app.api.deps import get_current_user, get_db
-from app.models.base import (
-    AsignacionProfesional,
-    Cita,
-    Evaluacion,
-    TransaccionMock,
-    Usuario,
+from app.api import deps
+from app.models.base import Usuario
+from app.services.business_services import (
+    UserService,
+    EvaluationService,
+    AssignmentService,
+    AppointmentService
 )
 
 router = APIRouter()
 
-
 class AppointmentCreate(BaseModel):
     id_paciente: int
     fecha_cita: datetime
-    mensaje_seguimiento: Optional[str] = None
-
-
-@router.post("/appointments")
-async def create_appointment(
-    request: AppointmentCreate, db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)
-):
-    if current_user.rol != "profesional":
-        raise HTTPException(status_code=403, detail="Solo profesionales pueden agendar citas")
-
-    # Verificar que el paciente tenga alguna asignación activa (es premium)
-    stmt = select(AsignacionProfesional).where(
-        AsignacionProfesional.id_paciente == request.id_paciente, AsignacionProfesional.activa
-    )
-    result = await db.execute(stmt)
-    asignacion = result.scalars().first()
-    if not asignacion:
-        raise HTTPException(status_code=403, detail="El paciente no tiene una suscripción premium activa")
-
-    # Si el profesional que crea la cita no es el asignado originalmente,
-    # opcionalmente podríamos actualizar la asignación o simplemente permitirlo.
-    # Para mayor flexibilidad (especialmente en pruebas), permitimos que cualquier profesional atienda.
-
-    # GENERAR LINK ÚNICO PARA ESTA CITA
-    # Usamos Jitsi Meet porque permite crear salas persistentes mediante la URL
-    room_id = f"MindGuard-{uuid.uuid4().hex[:12]}"
-    link_unico = f"https://meet.jit.si/{room_id}"
-
-    nueva_cita = Cita(
-        id_paciente=request.id_paciente,
-        id_profesional=current_user.id,
-        fecha_cita=request.fecha_cita,
-        link_reunion=link_unico,
-        mensaje_seguimiento=request.mensaje_seguimiento,
-    )
-    db.add(nueva_cita)
-    await db.commit()
-    await db.refresh(nueva_cita)
-    return {"mensaje": "Cita programada con éxito", "link": link_unico}
-
-
-@router.get("/appointments/me")
-async def get_my_appointments(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    if current_user.rol == "profesional":
-        stmt = (
-            select(Cita, Usuario.nombre.label("otro_nombre"))
-            .join(Usuario, Cita.id_paciente == Usuario.id)
-            .where(Cita.id_profesional == current_user.id)
-            .order_by(Cita.fecha_cita.asc())
-        )
-    else:
-        stmt = (
-            select(Cita, Usuario.nombre.label("otro_nombre"))
-            .join(Usuario, Cita.id_profesional == Usuario.id)
-            .where(Cita.id_paciente == current_user.id)
-            .order_by(Cita.fecha_cita.asc())
-        )
-
-    result = await db.execute(stmt)
-    rows = result.all()
-
-    return [
-        {
-            "id": row[0].id,
-            "fecha": row[0].fecha_cita,
-            "link": row[0].link_reunion,
-            "mensaje": row[0].mensaje_seguimiento,
-            "estado": row[0].estado,
-            "con": row[1],
-        }
-        for row in rows
-    ]
-
+    mensaje_seguimiento: str | None = None
 
 class ProfessionalSchema(BaseModel):
     id: int
@@ -105,13 +27,11 @@ class ProfessionalSchema(BaseModel):
 
     model_config = {"from_attributes": True}
 
-
 class PaymentRequest(BaseModel):
     id_profesional: int
     monto: float
     metodo: str
-    referencia_pago: Optional[str] = None
-
+    referencia_pago: str | None = None
 
 class PaymentResponse(BaseModel):
     mensaje: str
@@ -119,106 +39,147 @@ class PaymentResponse(BaseModel):
     asignacion_id: int
     expira_en: datetime
 
+@router.post("/appointments")
+async def create_appointment(
+    request: AppointmentCreate,
+    appointment_service: Annotated[AppointmentService, Depends(deps.get_appointment_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+):
+    if current_user.rol != "profesional":
+        raise HTTPException(status_code=403, detail="Solo profesionales pueden agendar citas")
+
+    # Delegar la creación del agendamiento y videoconferencia al servicio de negocio
+    res = await appointment_service.create_appointment(
+        professional_id=current_user.id,
+        patient_id=request.id_paciente,
+        fecha_cita=request.fecha_cita,
+        mensaje_seguimiento=request.mensaje_seguimiento
+    )
+    return {"mensaje": "Cita programada con éxito", "link": res.link_reunion}
+
+@router.get("/appointments/me")
+async def get_my_appointments(
+    appointment_service: Annotated[AppointmentService, Depends(deps.get_appointment_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+):
+    return await appointment_service.list_by_user(current_user.id, current_user.rol)
 
 @router.get("/professionals", response_model=List[ProfessionalSchema])
-async def list_professionals(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    result = await db.execute(select(Usuario).filter(Usuario.rol == "profesional"))
-    return result.scalars().all()
-
+async def list_professionals(
+    assignment_service: Annotated[AssignmentService, Depends(deps.get_assignment_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+):
+    return await assignment_service.list_professionals()
 
 @router.post("/payment/mock", response_model=PaymentResponse)
 async def simulate_payment_and_assign(
-    request: PaymentRequest, db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)
+    request: PaymentRequest,
+    assignment_service: Annotated[AssignmentService, Depends(deps.get_assignment_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
 ):
     try:
-        # Cambio: de 2 días a 1 día para la prueba
-        expiracion = datetime.now(UTC) + (timedelta(days=1) if request.metodo == "prueba" else timedelta(days=30))
-        transaccion = TransaccionMock(
-            id_usuario=current_user.id,
-            id_profesional=request.id_profesional,
+        # Delegamos en el servicio de negocio y retornamos la respuesta con los IDs reales creados
+        res = await assignment_service.simulate_payment_and_assign(
+            patient_id=current_user.id,
+            professional_id=request.id_profesional,
             monto=request.monto,
-            metodo_pago=request.metodo,
-            estado="completado",
+            metodo=request.metodo
         )
-        db.add(transaccion)
-
-        q = select(AsignacionProfesional).where(
-            AsignacionProfesional.id_paciente == current_user.id, AsignacionProfesional.activa
-        )
-        res_old = await db.execute(q)
-        for old in res_old.scalars().all():
-            old.activa = False
-
-        nueva_asig = AsignacionProfesional(
-            id_paciente=current_user.id,
-            id_profesional=request.id_profesional,
-            fecha_inicio=datetime.now(UTC),
-            activa=True,
-        )
-        db.add(nueva_asig)
-        await db.commit()
-
-        msj = f"¡{request.metodo.capitalize()} verificado! Servicio premium activado."
         return PaymentResponse(
-            mensaje=msj, transaccion_id=random.randint(1000, 9999), asignacion_id=1, expira_en=expiracion
+            mensaje=res["mensaje"],
+            transaccion_id=res["transaccion_id"],
+            asignacion_id=res["asignacion_id"],
+            expira_en=res["expira_en"]
         )
     except Exception as e:
-        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-
 @router.get("/my-assignment")
-async def get_my_assignment(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    result = await db.execute(
-        select(AsignacionProfesional).filter(
-            AsignacionProfesional.id_paciente == current_user.id, AsignacionProfesional.activa
-        )
-    )
-    asig = result.scalars().first()
+async def get_my_assignment(
+    assignment_service: Annotated[AssignmentService, Depends(deps.get_assignment_service)],
+    user_service: Annotated[UserService, Depends(deps.get_user_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+):
+    asig = await assignment_service.get_active_by_patient(current_user.id)
     if not asig:
         return None
 
-    res_pro = await db.execute(select(Usuario).filter(Usuario.id == asig.id_profesional))
-    pro = res_pro.scalars().first()
+    pro = await user_service.get_by_id(asig.id_profesional)
+    
+    # Cálculo dinámico de días restantes en base a la fecha de inicio
+    limite = asig.fecha_inicio + timedelta(days=30)
+    dias_restantes = (limite - datetime.now(timezone.utc)).days
+    dias_restantes = max(0, dias_restantes)
 
     return {
         "profesional": pro.nombre if pro else "Especialista",
         "fecha_inicio": asig.fecha_inicio,
-        "dias_restantes": 30,  # Mock simplificado
+        "dias_restantes": dias_restantes,
     }
 
-
 @router.get("/assigned-patients")
-async def get_assigned_patients(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+async def get_assigned_patients(
+    assignment_service: Annotated[AssignmentService, Depends(deps.get_assignment_service)],
+    eval_service: Annotated[EvaluationService, Depends(deps.get_evaluation_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+):
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
 
-    stmt = (
-        select(Usuario)
-        .join(AsignacionProfesional, Usuario.id == AsignacionProfesional.id_paciente)
-        .where(AsignacionProfesional.id_profesional == current_user.id, AsignacionProfesional.activa)
-    )
-    result = await db.execute(stmt)
-    return [{"id": p.id, "nombre": p.nombre, "email": p.email, "riesgo": "Estable"} for p in result.scalars().all()]
-
+    patients = await assignment_service.list_assigned_patients(current_user.id)
+    
+    # Corrección del riesgo clínico hardcodeado. Calculamos el nivel de riesgo real de cada paciente.
+    enriched_patients = []
+    for p in patients:
+        history = await eval_service.list_by_user(p["id"], asc=False)
+        riesgo = "Estable"
+        if history:
+            riesgo = history[0].nivelRiesgo or "Estable"
+        
+        enriched_patients.append({
+            "id": p["id"],
+            "nombre": p["nombre"],
+            "email": p["email"],
+            "riesgo": riesgo
+        })
+    return enriched_patients
 
 @router.get("/earnings")
-async def get_earnings(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+async def get_earnings(
+    assignment_service: Annotated[AssignmentService, Depends(deps.get_assignment_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+):
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Acceso solo para profesionales")
 
-    stmt = select(func.sum(TransaccionMock.monto)).where(TransaccionMock.id_profesional == current_user.id)
-    result = await db.execute(stmt)
-    return {"total_ganado": result.scalar() or 0, "moneda": "USD"}
-
+    return await assignment_service.get_earnings(current_user.id)
 
 @router.get("/patient-history/{patient_id}")
 async def get_patient_history(
-    patient_id: int, db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_user)
+    patient_id: int,
+    assignment_service: Annotated[AssignmentService, Depends(deps.get_assignment_service)],
+    eval_service: Annotated[EvaluationService, Depends(deps.get_evaluation_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
 ):
-    # Verificación de seguridad básica
-    stmt = select(Evaluacion).where(Evaluacion.id_usuario == patient_id).order_by(Evaluacion.fecha.desc())
-    result = await db.execute(stmt)
+    # Verificación de seguridad estricta para mitigar la vulnerabilidad IDOR/BOLA
+    tiene_acceso = False
+    
+    if current_user.id == patient_id:
+        tiene_acceso = True
+    elif current_user.rol in ["admin", "administrador"]:
+        tiene_acceso = True
+    elif current_user.rol == "profesional":
+        patients = await assignment_service.list_assigned_patients(current_user.id)
+        if any(p["id"] == patient_id for p in patients):
+            tiene_acceso = True
+
+    if not tiene_acceso:
+        raise HTTPException(
+            status_code=403,
+            detail="Acceso denegado: No tienes autorización para consultar el historial clínico de este paciente."
+        )
+
+    evaluations = await eval_service.list_by_user(patient_id, asc=False)
     return [
         {
             "id": ev.id,
@@ -227,5 +188,5 @@ async def get_patient_history(
             "gad7Score": ev.gad7Score,
             "resultadoIA": ev.resultadoIA,
         }
-        for ev in result.scalars().all()
+        for ev in evaluations
     ]

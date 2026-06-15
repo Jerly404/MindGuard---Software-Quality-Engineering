@@ -5,9 +5,13 @@ import { Shield, LogOut, User as UserIcon } from 'lucide-react';
 const Navbar = ({ onLogout }: { onLogout: () => void }) => {
     const user = authApi.getCurrentUser();
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        // Limpiar toda la memoria local y forzar recarga para resetear React Query
+    const handleLogout = async () => {
+        try {
+            await authApi.logout();
+        } catch (e) {
+            console.error("Logout failed on server, cleaning client state anyway", e);
+            localStorage.removeItem('user');
+        }
         onLogout();
         window.location.href = '/login'; 
     };
@@ -29,7 +33,7 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
                             <UserIcon className="h-5 w-5" />
                             <span className="font-medium">{user?.rol === 'profesional' ? 'Dr/a. ' : ''}Usuario</span>
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 capitalize">
-                                {user?.rol}
+                                {user?.rol || 'usuario'}
                             </span>
                         </div>
                         <button

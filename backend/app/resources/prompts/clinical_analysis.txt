@@ -1,0 +1,12 @@
+Analiza el siguiente texto de una conversación de salud mental y devuelve un JSON estricto con este formato:
+{
+  "sentiment": "DISTRESS" o "STABLE",
+  "has_alert": true o false (si hay riesgo de suicidio),
+  "emociones_detectadas": {"tristeza": 0.x, "ansiedad": 0.x, "estrés": 0.x, "sobrepensamiento": 0.x, "agotamiento_mental": 0.x},
+  "factores_detectados": ["factor1", "factor2"],
+  "riesgo_emocional": "bajo", "moderado" o "alto",
+  "interpretacion": "resumen breve del estado del usuario",
+  "recomendacion": "consejo breve"
+}
+
+Texto: {text}

@@ -16,10 +16,8 @@ const Signup: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
         try {
             await authApi.signup({ email, password, nombre, rol: 'usuario' });
             
-            // Login automático corregido
-            const response = await authApi.login({ username: email, password: password });
-            
-            localStorage.setItem('token', response.data.access_token);
+            // Login automático
+            await authApi.login({ username: email, password: password });
             onSignup();
             navigate('/');
         } catch (err: any) {

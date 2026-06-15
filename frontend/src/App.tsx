@@ -14,13 +14,13 @@ import { authApi } from './services/api';
 import './index.css';
 
 const ProtectedRoute = ({ children, roles }: { children: React.ReactNode, roles?: string[] }) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
+  const user = authApi.getCurrentUser();
+  
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  const user = authApi.getCurrentUser();
-  if (roles && user && !roles.includes(user.rol)) {
+  if (roles && !roles.includes(user.rol)) {
     return <Navigate to="/" replace />;
   }
 
@@ -37,12 +37,12 @@ const HomeRedirect = () => {
 };
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(!!localStorage.getItem('token'));
+  const [isAuthenticated, setIsAuthenticated] = React.useState(!!authApi.getCurrentUser());
   const user = authApi.getCurrentUser();
   const showChatbot = isAuthenticated && user && (user.rol === 'usuario' || user.rol === 'paciente');
 
   const handleAuthChange = () => {
-    setIsAuthenticated(!!localStorage.getItem('token'));
+    setIsAuthenticated(!!authApi.getCurrentUser());
   };
 
   return (

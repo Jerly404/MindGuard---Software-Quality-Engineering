@@ -13,8 +13,7 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
         e.preventDefault();
         setError('');
         try {
-            const response = await authApi.login({ username: email, password: password });
-            localStorage.setItem('token', response.data.access_token);
+            await authApi.login({ username: email, password: password });
             onLogin();
             navigate('/');
         } catch (err: any) {
