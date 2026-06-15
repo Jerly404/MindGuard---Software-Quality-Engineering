@@ -665,7 +665,7 @@ html.a11y-high-contrast body {
 
 html.a11y-high-contrast .bg-white,
 html.a11y-high-contrast .bg-slate-50,
-html.a11y-high-contrast .bg-slate-50/50,
+html.a11y-high-contrast .bg-slate-50\/50,
 html.a11y-high-contrast .bg-slate-100 {
   background-color: #121212 !important;
   color: #ffffff !important;
