@@ -64,13 +64,31 @@ const FloatingChatbot: React.FC = () => {
         try {
             // Reutilizamos el endpoint de análisis (ajustado en el backend si fuera necesario)
             const res = await assessmentApi.submitChat(messages, "final");
-            setReport(res.data);
+            const data = res.data;
+
+            const getLevelFromScore = (score: number) => {
+                if (score >= 15) return "Alta";
+                if (score >= 10) return "Moderada";
+                if (score >= 5) return "Leve";
+                return "Baja";
+            };
+
+            const mappedReport = {
+                nivel_ansiedad: getLevelFromScore(data.gad7Score),
+                nivel_depresion: getLevelFromScore(data.phq9Score),
+                resumen: data.resultadoIA || data.analisis_detallado?.interpretacion || "Evaluación completada",
+                plan_accion: (data.analisis_detallado?.patrones && data.analisis_detallado.patrones.length > 0) ? data.analisis_detallado.patrones : null,
+                recomendacion: data.analisis_detallado?.recomendacion || "Consulte a un especialista."
+            };
+
+            setReport(mappedReport);
         } catch {
             alert("No se pudo generar el reporte en este momento.");
         } finally {
             setIsLoadingReport(false);
         }
     };
+
 
     React.useEffect(() => {
         if (isOpen && messages.length === 0) {
