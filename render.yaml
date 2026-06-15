@@ -16,6 +16,12 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAILS_FROM_EMAIL
+        sync: false
 
   # Frontend
   - type: web

@@ -39,3 +39,7 @@ backend/uvicorn.log
 .DS_Store
 .idea/
 .vscode/
+
+# Environment variables
+.env
+backend/.env
