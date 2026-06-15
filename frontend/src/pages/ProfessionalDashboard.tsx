@@ -20,8 +20,8 @@ const ProfessionalDashboard: React.FC = () => {
     const [scheduleDate, setScheduleDate] = React.useState('');
     const [submitting, setSubmitting] = React.useState(false);
 
-    const loadData = React.useCallback(async () => {
-        setLoading(true);
+    const loadData = React.useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const [patRes, earnRes, appoRes] = await Promise.all([
                 premiumApi.getAssignedPatients(),
@@ -34,12 +34,17 @@ const ProfessionalDashboard: React.FC = () => {
         } catch (error) {
             console.error(error);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, []);
 
-    const sendLinkToPatient = (_link: string, patientName: string) => {
-        alert(`🚀 Link enviado a ${patientName}.\nLa sesión ya está activa en su panel.`);
+    const sendLinkToPatient = async (appointmentId: number, patientName: string) => {
+        try {
+            const res = await premiumApi.resendAppointmentEmail(appointmentId);
+            alert(`🚀 ${res.data.mensaje}.\nLa sesión ya está activa en el panel de ${patientName}.`);
+        } catch (error) {
+            alert("Error al intentar reenviar el correo de la reunión.");
+        }
     };
 
     const viewHistory = async (patient: any) => {
@@ -93,7 +98,9 @@ const ProfessionalDashboard: React.FC = () => {
     };
 
     React.useEffect(() => {
-        loadData();
+        loadData(false);
+        const dataInterval = setInterval(() => loadData(true), 5000);
+        return () => clearInterval(dataInterval);
     }, [loadData]);
 
     return (
@@ -104,7 +111,7 @@ const ProfessionalDashboard: React.FC = () => {
                         <h1 className="text-3xl font-black text-slate-900">Panel Clínico</h1>
                         <p className="text-slate-500 font-medium">Gestión de Pacientes y Supervisión en Tiempo Real</p>
                     </div>
-                    <button onClick={loadData} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 shadow-sm transition-all">
+                    <button onClick={() => loadData(false)} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 shadow-sm transition-all">
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
                 </header>
@@ -199,7 +206,7 @@ const ProfessionalDashboard: React.FC = () => {
                                             <ExternalLink size={14} /> ENTRAR A SALA
                                         </a>
                                         <button 
-                                            onClick={() => sendLinkToPatient(app.link, app.con)}
+                                            onClick={() => sendLinkToPatient(app.id, app.con)}
                                             className="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all"
                                         >
                                             <Send size={14} /> REENVIAR ACCESO

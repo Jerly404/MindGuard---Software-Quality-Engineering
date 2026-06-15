@@ -58,6 +58,23 @@ async def create_appointment(
     return {"mensaje": "Cita programada con éxito", "link": res.link_reunion}
 
 
+@router.post("/appointments/{appointment_id}/resend-email")
+async def resend_appointment_email(
+    appointment_id: int,
+    appointment_service: Annotated[AppointmentService, Depends(deps.get_appointment_service)],
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)],
+):
+    if current_user.rol != "profesional":
+        raise HTTPException(status_code=403, detail="Solo profesionales pueden reenviar correos de citas")
+        
+    enviado = await appointment_service.resend_appointment_email(appointment_id, current_user.id)
+    if enviado:
+        return {"mensaje": "Correo reenviado con éxito"}
+    else:
+        return {"mensaje": "El correo se generó en la consola del servidor (modo desarrollo o error de envío)"}
+
+
+
 @router.get("/appointments/me")
 async def get_my_appointments(
     appointment_service: Annotated[AppointmentService, Depends(deps.get_appointment_service)],

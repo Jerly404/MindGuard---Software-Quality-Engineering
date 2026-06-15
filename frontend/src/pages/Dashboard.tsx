@@ -120,12 +120,12 @@ const Dashboard: React.FC = () => {
 
     React.useEffect(() => {
         loadData();
-        const dataInterval = setInterval(loadData, 30000);
+        const dataInterval = setInterval(loadData, 5000);
         return () => clearInterval(dataInterval);
     }, [loadData]);
 
     React.useEffect(() => {
-        const timer = setInterval(checkAutoOpenLink, 30000);
+        const timer = setInterval(checkAutoOpenLink, 5000);
         return () => clearInterval(timer);
     }, [checkAutoOpenLink]);
 

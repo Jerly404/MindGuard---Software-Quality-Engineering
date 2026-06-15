@@ -50,6 +50,8 @@ export const premiumApi = {
     createAppointment: (data: { id_paciente: number, fecha_cita: string, mensaje_seguimiento?: string }) => 
         api.post('/premium/appointments', data),
     getMyAppointments: () => api.get('/premium/appointments/me'),
+    resendAppointmentEmail: (appointmentId: number) => 
+        api.post(`/premium/appointments/${appointmentId}/resend-email`),
 };
 
 export const authApi = {
