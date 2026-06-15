@@ -1,8 +1,7 @@
-import os
 from datetime import timedelta
 from typing import Annotated, Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api import deps
@@ -57,6 +56,7 @@ async def reset_password(
 
 @router.post("/login/access-token", response_model=Token)
 async def login_access_token(
+    request: Request,
     response: Response,
     user_service: Annotated[UserService, Depends(deps.get_user_service)],
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -77,10 +77,10 @@ async def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = security.create_access_token(user.id, role=user.rol, expires_delta=access_token_expires)
 
-    # Configuración dinámica de Cookie Segura
-    # En producción (Render cross-site), se requiere SameSite=None y Secure=True
-    # En desarrollo local (localhost same-site), SameSite=Lax y Secure=False
-    is_prod = os.getenv("ENV") == "production" or not settings.SQLALCHEMY_DATABASE_URL.startswith("sqlite")
+    # Autodetección robusta de entorno de despliegue mediante el host de la petición
+    host = request.base_url.hostname or ""
+    is_prod = host != "localhost" and host != "127.0.0.1"
+
     response.set_cookie(
         key="access_token",
         value=token,
@@ -97,8 +97,9 @@ async def login_access_token(
 
 
 @router.post("/logout", response_model=Msg)
-async def logout(response: Response) -> Any:
-    is_prod = os.getenv("ENV") == "production" or not settings.SQLALCHEMY_DATABASE_URL.startswith("sqlite")
+async def logout(request: Request, response: Response) -> Any:
+    host = request.base_url.hostname or ""
+    is_prod = host != "localhost" and host != "127.0.0.1"
     response.delete_cookie(key="access_token", secure=True if is_prod else False, samesite="none" if is_prod else "lax")
     return {"msg": "Successfully logged out"}
 
