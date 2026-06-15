@@ -46,8 +46,13 @@ const BreathingExercise: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div className="breathing-modal-overlay">
       <div className="breathing-card animate-scale-in">
-        <button className="breathing-close-btn" onClick={onClose} title="Cerrar">
-          <X size={24} />
+        <button 
+          className="breathing-close-btn" 
+          onClick={onClose} 
+          title="Cerrar"
+          aria-label="Cerrar ejercicio de respiración"
+        >
+          <X size={24} aria-hidden="true" />
         </button>
         
         <div className="breathing-content">
@@ -66,11 +71,21 @@ const BreathingExercise: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
           
           <div className="breathing-controls">
-            <button className={`btn-circle ${isActive ? 'active' : ''}`} onClick={() => setIsActive(!isActive)}>
-              {isActive ? <Pause size={28} /> : <Play size={28} />}
+            <button 
+              className={`btn-circle ${isActive ? 'active' : ''}`} 
+              onClick={() => setIsActive(!isActive)}
+              aria-label={isActive ? "Pausar ejercicio de respiración" : "Iniciar ejercicio de respiración"}
+              title={isActive ? "Pausar" : "Iniciar"}
+            >
+              {isActive ? <Pause size={28} aria-hidden="true" /> : <Play size={28} aria-hidden="true" />}
             </button>
-            <button className="btn-circle secondary" onClick={() => { setIsActive(false); setSeconds(4); setPhase('Inhala'); setCycles(0); }}>
-              <RefreshCw size={22} />
+            <button 
+              className="btn-circle secondary" 
+              onClick={() => { setIsActive(false); setSeconds(4); setPhase('Inhala'); setCycles(0); }}
+              aria-label="Reiniciar ejercicio de respiración"
+              title="Reiniciar"
+            >
+              <RefreshCw size={22} aria-hidden="true" />
             </button>
           </div>
 

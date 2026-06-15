@@ -123,8 +123,9 @@ const Assessment: React.FC = () => {
                 <button 
                     onClick={() => setStep(1)}
                     className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-lg hover:bg-indigo-700 transition-all flex justify-center items-center gap-2 shadow-lg shadow-indigo-200"
+                    aria-label="Comenzar conversación para evaluación de salud mental"
                 >
-                    Comenzar Conversación <ArrowRight size={20} />
+                    Comenzar Conversación <ArrowRight size={20} aria-hidden="true" />
                 </button>
             </div>
         </div>
@@ -134,23 +135,23 @@ const Assessment: React.FC = () => {
         <div className="max-w-3xl mx-auto h-[80vh] flex flex-col bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden my-4 animate-in zoom-in-95 duration-300">
             {/* Header */}
             <div className="px-6 py-4 bg-indigo-600 text-white flex items-center gap-3">
-                <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center" aria-hidden="true">
                     <Bot size={24} />
                 </div>
                 <div>
                     <h3 className="font-bold">Asistente MindGuard</h3>
                     <p className="text-xs text-indigo-100 flex items-center gap-1">
-                        <span className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse"></span> IA Activa
+                        <span className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" aria-hidden="true"></span> IA Activa
                     </p>
                 </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50" role="log" aria-live="polite" aria-label="Historial de mensajes de chat">
                 {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-in slide-in-from-bottom-2`}>
                         <div className={`flex gap-3 max-w-[80%] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                            <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${m.role === 'assistant' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${m.role === 'assistant' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`} aria-hidden="true">
                                 {m.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
                             </div>
                             <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
@@ -158,13 +159,14 @@ const Assessment: React.FC = () => {
                                 ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' 
                                 : 'bg-indigo-600 text-white rounded-tr-none'
                             }`}>
+                                <span className="sr-only">{m.role === 'assistant' ? 'Asistente: ' : 'Tú: '}</span>
                                 {m.content}
                             </div>
                         </div>
                     </div>
                 ))}
                 {isTyping && (
-                    <div className="flex justify-start animate-in fade-in">
+                    <div className="flex justify-start animate-in fade-in" aria-label="Asistente escribiendo...">
                         <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 flex gap-1">
                             <span className="h-2 w-2 bg-slate-300 rounded-full animate-bounce"></span>
                             <span className="h-2 w-2 bg-slate-300 rounded-full animate-bounce delay-75"></span>
@@ -173,7 +175,7 @@ const Assessment: React.FC = () => {
                     </div>
                 )}
                 {loadingResult && (
-                    <div className="flex flex-col items-center justify-center py-8 text-indigo-600 gap-4">
+                    <div className="flex flex-col items-center justify-center py-8 text-indigo-600 gap-4" aria-live="assertive">
                         <RefreshCw className="animate-spin" size={32} />
                         <p className="text-sm font-medium">Analizando patrones emocionales...</p>
                     </div>
@@ -184,20 +186,25 @@ const Assessment: React.FC = () => {
             {/* Input Area */}
             <div className="p-4 bg-white border-t border-slate-100">
                 <div className="relative flex items-center">
+                    <label htmlFor="chat-textarea" className="sr-only">Escribe tu respuesta aquí</label>
                     <textarea 
+                        id="chat-textarea"
                         rows={1}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
                         placeholder="Escribe tu respuesta aquí..."
                         className="w-full p-4 pr-16 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none resize-none text-sm"
+                        aria-label="Escribe tu mensaje para el Asistente MindGuard"
                     />
                     <button 
                         onClick={handleSendMessage}
                         disabled={!inputValue.trim() || isTyping || loadingResult}
                         className="absolute right-2 p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:grayscale transition-all"
+                        aria-label="Enviar mensaje"
+                        title="Enviar"
                     >
-                        <Send size={20} />
+                        <Send size={20} aria-hidden="true" />
                     </button>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2 text-center">

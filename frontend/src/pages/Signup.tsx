@@ -33,18 +33,45 @@ const Signup: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
                 {error && <div className="error-message">{error}</div>}
                 <form onSubmit={handleSignup}>
                     <div className="input-group">
-                        <User size={18} />
-                        <input type="text" placeholder="Nombre Completo" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                        <label htmlFor="signup-name" className="sr-only">Nombre Completo</label>
+                        <User size={18} aria-hidden="true" />
+                        <input 
+                            id="signup-name"
+                            type="text" 
+                            placeholder="Nombre Completo" 
+                            value={nombre} 
+                            onChange={(e) => setNombre(e.target.value)} 
+                            required 
+                            aria-required="true"
+                        />
                     </div>
                     <div className="input-group">
-                        <Mail size={18} />
-                        <input type="email" placeholder="Correo Electrónico" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        <label htmlFor="signup-email" className="sr-only">Correo Electrónico</label>
+                        <Mail size={18} aria-hidden="true" />
+                        <input 
+                            id="signup-email"
+                            type="email" 
+                            placeholder="Correo Electrónico" 
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
+                            required 
+                            aria-required="true"
+                        />
                     </div>
                     <div className="input-group">
-                        <Lock size={18} />
-                        <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        <label htmlFor="signup-password" className="sr-only">Contraseña</label>
+                        <Lock size={18} aria-hidden="true" />
+                        <input 
+                            id="signup-password"
+                            type="password" 
+                            placeholder="Contraseña" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            required 
+                            aria-required="true"
+                        />
                     </div>
-                    <button type="submit" className="btn-primary">Registrarse</button>
+                    <button type="submit" className="btn-primary" aria-label="Crear cuenta nueva">Registrarse</button>
                 </form>
                 <div className="auth-footer">
                     ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión aquí</Link>

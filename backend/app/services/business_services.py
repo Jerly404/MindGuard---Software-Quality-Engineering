@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -18,16 +19,41 @@ from app.services.clinical_ai import ClinicalAIService
 
 logger = logging.getLogger("mindguard")
 
+# Mapeo constante de severidad de riesgo a puntaje clínico equivalente
+LEVEL_SCORE_MAPPING = {
+    "alto": 18,
+    "grave": 18,
+    "medio": 10,
+    "moderado": 10,
+    "leve": 5,
+    "bajo": 5
+}
+
 
 def level_to_score(level: str) -> int:
-    level = str(level).lower()
-    if "alto" in level or "grave" in level:
-        return 18
-    if "medio" in level or "moderado" in level:
-        return 10
-    if "leve" in level or "bajo" in level:
-        return 5
+    """Convierte una etiqueta cualitativa de riesgo en su puntaje numérico equivalente."""
+    level_lower = str(level).lower()
+    for keyword, score in LEVEL_SCORE_MAPPING.items():
+        if keyword in level_lower:
+            return score
     return 0
+
+
+def get_risk_value(label: str) -> float:
+    """Retorna un valor de intensidad de riesgo (0.0 a 1.0) según la etiqueta del nivel."""
+    label_lower = str(label).lower()
+    if "alto" in label_lower or "grave" in label_lower:
+        return 0.8
+    if "medio" in label_lower or "moderado" in label_lower:
+        return 0.5
+    return 0.2
+
+
+def generate_meeting_link() -> str:
+    """Genera un enlace único para una sesión de videoconferencia en Jitsi."""
+    room_id = f"MindGuard-{uuid.uuid4().hex[:12]}"
+    return f"https://meet.jit.si/{room_id}"
+
 
 
 class UserService:
@@ -94,6 +120,18 @@ class EvaluationService:
         return await self.repo.list_by_user_desc(user_id)
 
     async def create_evaluation(self, user_id: int, phq9Score: int, gad7Score: int, text_input: str) -> Evaluacion:
+        # Validación de límites de puntuación clínica
+        if not (0 <= phq9Score <= 27):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El puntaje PHQ-9 debe estar entre 0 y 27.",
+            )
+        if not (0 <= gad7Score <= 21):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El puntaje GAD-7 debe estar entre 0 y 21.",
+            )
+
         ai_result = await self.ai.analyze_text(text_input)
 
         resultado_ia_text = ai_result.get("interpretacion", "No se pudo realizar el análisis.")
@@ -144,17 +182,9 @@ class EvaluationService:
         )
         created_eval = await self.repo.create(new_eval)
 
-        # Mapeo de niveles cualitativos a valores flotantes para el frontend
-        ansiedad_val = (
-            0.8
-            if "alto" in ansiedad_label.lower() or "grave" in ansiedad_label.lower()
-            else (0.5 if "medio" in ansiedad_label.lower() or "moderado" in ansiedad_label.lower() else 0.2)
-        )
-        depresion_val = (
-            0.8
-            if "alto" in depresion_label.lower() or "grave" in depresion_label.lower()
-            else (0.5 if "medio" in depresion_label.lower() or "moderado" in depresion_label.lower() else 0.2)
-        )
+        # Mapeo de niveles cualitativos a valores flotantes para el frontend usando get_risk_value helper
+        ansiedad_val = get_risk_value(ansiedad_label)
+        depresion_val = get_risk_value(depresion_label)
 
         # Construir y retornar el esquema completo de evaluación
         detail = DetailedAIAnalysis(
@@ -259,10 +289,7 @@ class AppointmentService:
             )
 
         # Generar link único de videoconferencia
-        import uuid
-
-        room_id = f"MindGuard-{uuid.uuid4().hex[:12]}"
-        link_unico = f"https://meet.jit.si/{room_id}"
+        link_unico = generate_meeting_link()
 
         new_appointment = Cita(
             id_paciente=patient_id,

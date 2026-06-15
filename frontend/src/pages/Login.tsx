@@ -29,17 +29,35 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
                 {error && <div className="error-message">{error}</div>}
                 <form onSubmit={handleLogin}>
                     <div className="input-group">
-                        <Mail size={18} />
-                        <input type="email" placeholder="Correo Electrónico" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        <label htmlFor="login-email" className="sr-only">Correo Electrónico</label>
+                        <Mail size={18} aria-hidden="true" />
+                        <input 
+                            id="login-email"
+                            type="email" 
+                            placeholder="Correo Electrónico" 
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
+                            required 
+                            aria-required="true"
+                        />
                     </div>
                     <div className="input-group">
-                        <Lock size={18} />
-                        <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        <label htmlFor="login-password" className="sr-only">Contraseña</label>
+                        <Lock size={18} aria-hidden="true" />
+                        <input 
+                            id="login-password"
+                            type="password" 
+                            placeholder="Contraseña" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            required 
+                            aria-required="true"
+                        />
                     </div>
                     <div className="forgot-password-link">
                         <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
                     </div>
-                    <button type="submit" className="btn-primary">Iniciar Sesión</button>
+                    <button type="submit" className="btn-primary" aria-label="Iniciar sesión en la aplicación">Iniciar Sesión</button>
                 </form>
                 <div className="auth-footer">
                     ¿No tienes una cuenta? <Link to="/signup">Regístrate aquí</Link>

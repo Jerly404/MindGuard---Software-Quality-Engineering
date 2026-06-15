@@ -84,8 +84,13 @@ const FloatingChatbot: React.FC = () => {
 
     if (!isOpen) {
         return (
-            <button onClick={() => setIsOpen(true)} className="fixed bottom-6 right-6 h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-50 animate-bounce">
-                <MessageCircle size={32} />
+            <button 
+                onClick={() => setIsOpen(true)} 
+                className="fixed bottom-6 right-6 h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-50 animate-bounce"
+                aria-label="Abrir asistente de chat de MindGuard"
+                title="Chatear con MindGuard"
+            >
+                <MessageCircle size={32} aria-hidden="true" />
             </button>
         );
     }
@@ -103,11 +108,18 @@ const FloatingChatbot: React.FC = () => {
                         </p>
                     </div>
                 </div>
-                <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded-full transition-colors"><X size={20} /></button>
+                <button 
+                    onClick={() => setIsOpen(false)} 
+                    className="hover:bg-white/20 p-1.5 rounded-full transition-colors"
+                    aria-label="Cerrar chat de MindGuard"
+                    title="Cerrar chat"
+                >
+                    <X size={20} aria-hidden="true" />
+                </button>
             </div>
 
             {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" role="log" aria-live="polite" aria-label="Historial de conversación del chatbot">
                 {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
                         <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] leading-relaxed shadow-sm ${
@@ -192,16 +204,24 @@ const FloatingChatbot: React.FC = () => {
             {/* Input */}
             <div className="p-4 bg-white border-t border-slate-100">
                 <div className="relative">
+                    <label htmlFor="floating-chat-input" className="sr-only">Conversa con MindGuard</label>
                     <input 
+                        id="floating-chat-input"
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Conversa con MindGuard..."
                         className="w-full p-4 pr-12 bg-slate-50 border-none rounded-2xl text-xs focus:ring-2 focus:ring-indigo-600 outline-none transition-all shadow-inner"
+                        aria-label="Mensaje para el Asistente MindGuard"
                     />
-                    <button onClick={() => handleSendMessage()} className="absolute right-3 top-2.5 p-2 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-colors">
-                        <Send size={16} />
+                    <button 
+                        onClick={() => handleSendMessage()} 
+                        className="absolute right-3 top-2.5 p-2 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-colors"
+                        aria-label="Enviar mensaje"
+                        title="Enviar"
+                    >
+                        <Send size={16} aria-hidden="true" />
                     </button>
                 </div>
             </div>
