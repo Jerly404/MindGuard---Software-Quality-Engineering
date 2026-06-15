@@ -10,8 +10,8 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 BOLD='\033[1m'
 NC='\033[0m'
-
-clear
+# Clear screen if running interactively
+[ -t 0 ] && clear || true
 echo -e "${BOLD}${BLUE}================================================================${NC}"
 echo -e "${BOLD}${BLUE}   REPORTE INTEGRAL DE CALIDAD - MINDGUARD IA   ${NC}"
 echo -e "${BOLD}${BLUE}================================================================${NC}"
