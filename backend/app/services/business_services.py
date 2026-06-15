@@ -20,14 +20,7 @@ from app.services.clinical_ai import ClinicalAIService
 logger = logging.getLogger("mindguard")
 
 # Mapeo constante de severidad de riesgo a puntaje clínico equivalente
-LEVEL_SCORE_MAPPING = {
-    "alto": 18,
-    "grave": 18,
-    "medio": 10,
-    "moderado": 10,
-    "leve": 5,
-    "bajo": 5
-}
+LEVEL_SCORE_MAPPING = {"alto": 18, "grave": 18, "medio": 10, "moderado": 10, "leve": 5, "bajo": 5}
 
 
 def level_to_score(level: str) -> int:
@@ -53,7 +46,6 @@ def generate_meeting_link() -> str:
     """Genera un enlace único para una sesión de videoconferencia en Jitsi."""
     room_id = f"MindGuard-{uuid.uuid4().hex[:12]}"
     return f"https://meet.jit.si/{room_id}"
-
 
 
 class UserService:
