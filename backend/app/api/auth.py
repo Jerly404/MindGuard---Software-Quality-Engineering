@@ -51,10 +51,7 @@ async def reset_password(
         )
 
     user.password_hash = security.get_password_hash(new_password.new_password)
-    # Guardamos los cambios usando la base de datos indirectamente (a través de commit de SQLAlchemy)
-    # Para mantener la cohesión, el servicio o el commit directo se encarga
-    # Aquí como manejamos base.py directamente podemos realizar commit o delegar
-    await user_service.repo.create(user)  # UserRepository.create realiza commit & refresh
+    await user_service.repo.create(user)
     return {"msg": "Password updated successfully"}
 
 
@@ -80,14 +77,16 @@ async def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = security.create_access_token(user.id, role=user.rol, expires_delta=access_token_expires)
 
-    # Configuración de Cookie Segura HttpOnly
-    is_secure = os.getenv("ENV") == "production"
+    # Configuración dinámica de Cookie Segura
+    # En producción (Render cross-site), se requiere SameSite=None y Secure=True
+    # En desarrollo local (localhost same-site), SameSite=Lax y Secure=False
+    is_prod = os.getenv("ENV") == "production" or not settings.SQLALCHEMY_DATABASE_URL.startswith("sqlite")
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        secure=is_secure,
-        samesite="lax",
+        secure=True if is_prod else False,
+        samesite="none" if is_prod else "lax",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
@@ -99,7 +98,8 @@ async def login_access_token(
 
 @router.post("/logout", response_model=Msg)
 async def logout(response: Response) -> Any:
-    response.delete_cookie(key="access_token")
+    is_prod = os.getenv("ENV") == "production" or not settings.SQLALCHEMY_DATABASE_URL.startswith("sqlite")
+    response.delete_cookie(key="access_token", secure=True if is_prod else False, samesite="none" if is_prod else "lax")
     return {"msg": "Successfully logged out"}
 
 
@@ -107,7 +107,6 @@ async def logout(response: Response) -> Any:
 async def create_user(
     *, user_service: Annotated[UserService, Depends(deps.get_user_service)], user_in: UserSignup
 ) -> Any:
-    # El rol "usuario" es forzado dentro de signup_user
     return await user_service.signup_user(nombre=user_in.nombre, email=user_in.email, password=user_in.password)
 
 
