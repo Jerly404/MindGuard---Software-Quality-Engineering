@@ -1,7 +1,10 @@
 from typing import List, Tuple
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.base import Cita, Usuario
+
 
 class AppointmentRepository:
     def __init__(self, db: AsyncSession):

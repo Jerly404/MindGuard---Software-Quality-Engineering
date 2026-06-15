@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -16,16 +16,16 @@ logger = logging.getLogger("mindguard")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting MindGuard IA API...")
     yield
     logger.info("Stopping MindGuard IA API...")
+
 
 app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json", lifespan=lifespan)
 
@@ -48,25 +48,27 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception caught: {exc}", exc_info=True)
-    
+
     # Solo mostrar el error crudo si estamos en pruebas o desarrollo
     is_dev = "pytest" in sys.modules or os.getenv("ENV") == "development"
     detail_msg = str(exc) if is_dev else "Internal Server Error"
-    
+
     response = JSONResponse(
         status_code=500,
         content={"detail": detail_msg},
     )
-    
+
     origin = request.headers.get("origin", "*")
     response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
     return response
+
 
 logger.info("SISTEMA MINDGUARD CARGADO - CORS CONFIGURADO - RUTAS ACTIVAS")
 
@@ -78,6 +80,7 @@ app.include_router(premium.router, prefix=f"{settings.API_V1_STR}/premium", tags
 for route in app.routes:
     if hasattr(route, "endpoint"):
         app.router.redirect_slashes = False
+
 
 @app.get("/")
 def root():

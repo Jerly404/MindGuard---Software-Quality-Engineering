@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.base import Usuario
+
 
 class UserRepository:
     def __init__(self, db: AsyncSession):

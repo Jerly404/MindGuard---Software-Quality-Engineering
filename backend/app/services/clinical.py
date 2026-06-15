@@ -1,5 +1,6 @@
 from app.services.clinical_ai import ClinicalAIService
 
+
 class ClinicalService:
     @staticmethod
     def get_phq9_level(score: int) -> str:
@@ -22,6 +23,7 @@ class ClinicalService:
         if score <= 14:
             return "Moderado"
         return "Grave"
+
 
 clinical_service = ClinicalService()
 # Delegate to the unified service

@@ -1,7 +1,8 @@
-from typing import Optional
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.base import TransaccionMock
+
 
 class TransactionRepository:
     def __init__(self, db: AsyncSession):

@@ -1,8 +1,8 @@
 import os
 from datetime import timedelta
-from typing import Any, List, Annotated
+from typing import Annotated, Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api import deps
@@ -10,16 +10,14 @@ from app.core import security
 from app.core.config import settings
 from app.models.base import Usuario
 from app.schemas.user import Msg, NewPassword, Token, User, UserCreate, UserSignup
-from app.services.email import email_service
 from app.services.business_services import UserService
+from app.services.email import email_service
 
 router = APIRouter()
 
+
 @router.post("/password-recovery/{email}", response_model=Msg)
-async def recover_password(
-    email: str,
-    user_service: Annotated[UserService, Depends(deps.get_user_service)]
-) -> Any:
+async def recover_password(email: str, user_service: Annotated[UserService, Depends(deps.get_user_service)]) -> Any:
     """
     Password recovery
     """
@@ -31,6 +29,7 @@ async def recover_password(
         await email_service.send_recovery_email(email_to=user.email, token=password_reset_token)
 
     return {"msg": "Password recovery email sent"}
+
 
 @router.post("/reset-password/", response_model=Msg)
 async def reset_password(
@@ -55,14 +54,15 @@ async def reset_password(
     # Guardamos los cambios usando la base de datos indirectamente (a través de commit de SQLAlchemy)
     # Para mantener la cohesión, el servicio o el commit directo se encarga
     # Aquí como manejamos base.py directamente podemos realizar commit o delegar
-    await user_service.repo.create(user) # UserRepository.create realiza commit & refresh
+    await user_service.repo.create(user)  # UserRepository.create realiza commit & refresh
     return {"msg": "Password updated successfully"}
+
 
 @router.post("/login/access-token", response_model=Token)
 async def login_access_token(
     response: Response,
     user_service: Annotated[UserService, Depends(deps.get_user_service)],
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     user = await user_service.get_by_email(form_data.username)
 
@@ -88,7 +88,7 @@ async def login_access_token(
         httponly=True,
         secure=is_secure,
         samesite="lax",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
     return {
@@ -96,23 +96,20 @@ async def login_access_token(
         "token_type": "bearer",
     }
 
+
 @router.post("/logout", response_model=Msg)
 async def logout(response: Response) -> Any:
     response.delete_cookie(key="access_token")
     return {"msg": "Successfully logged out"}
 
+
 @router.post("/signup", response_model=User)
 async def create_user(
-    *, 
-    user_service: Annotated[UserService, Depends(deps.get_user_service)], 
-    user_in: UserSignup
+    *, user_service: Annotated[UserService, Depends(deps.get_user_service)], user_in: UserSignup
 ) -> Any:
     # El rol "usuario" es forzado dentro de signup_user
-    return await user_service.signup_user(
-        nombre=user_in.nombre,
-        email=user_in.email,
-        password=user_in.password
-    )
+    return await user_service.signup_user(nombre=user_in.nombre, email=user_in.email, password=user_in.password)
+
 
 @router.post("/create-professional", response_model=User)
 async def create_professional(
@@ -130,10 +127,11 @@ async def create_professional(
 
     return await user_service.create_professional(user_in)
 
+
 @router.get("/users/", response_model=List[User])
 async def read_users(
     user_service: Annotated[UserService, Depends(deps.get_user_service)],
-    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)],
 ) -> Any:
     """Listar todos los usuarios (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:
@@ -141,11 +139,12 @@ async def read_users(
 
     return await user_service.list_all()
 
+
 @router.delete("/users/{user_id}/", response_model=Msg)
 async def delete_user(
     user_id: int,
     user_service: Annotated[UserService, Depends(deps.get_user_service)],
-    current_user: Annotated[Usuario, Depends(deps.get_current_user)]
+    current_user: Annotated[Usuario, Depends(deps.get_current_user)],
 ) -> Any:
     """Eliminar un usuario (Solo Admin)."""
     if current_user.rol not in ["admin", "administrador"]:

@@ -1,8 +1,10 @@
 import os
 import sys
 from typing import Optional
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "MindGuard IA"
@@ -25,16 +27,17 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
+
 settings = Settings()
 
 # Enforce security: do not allow a hardcoded secret key fallback in production environments
 if not settings.SECRET_KEY:
     is_development_or_test = (
-        "pytest" in sys.modules or 
-        os.getenv("ENV") == "development" or 
-        os.path.exists(".pytest_cache")
+        "pytest" in sys.modules or os.getenv("ENV") == "development" or os.path.exists(".pytest_cache")
     )
     if is_development_or_test:
         settings.SECRET_KEY = "fallback-secure-development-key-mindguard-2026"
     else:
-        raise ValueError("VULNERABILIDAD EVITADA: La variable de entorno SECRET_KEY debe estar configurada en producción.")
+        raise ValueError(
+            "VULNERABILIDAD EVITADA: La variable de entorno SECRET_KEY debe estar configurada en producción."
+        )

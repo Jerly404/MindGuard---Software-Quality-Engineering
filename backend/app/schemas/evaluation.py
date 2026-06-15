@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Dict, List, Optional
+
 from pydantic import BaseModel
+
 
 class EvaluationBase(BaseModel):
     phq9Score: int
@@ -9,8 +11,10 @@ class EvaluationBase(BaseModel):
     gad7Answers: Optional[List[int]] = None
     text_input: Optional[str] = None
 
+
 class EvaluationCreate(EvaluationBase):
     pass
+
 
 class DetailedAIAnalysis(BaseModel):
     emociones_detectadas: Dict[str, float]
@@ -19,6 +23,7 @@ class DetailedAIAnalysis(BaseModel):
     patrones: List[str]
     interpretacion: str
     recomendacion: str
+
 
 class Evaluation(EvaluationBase):
     id: int
@@ -31,11 +36,13 @@ class Evaluation(EvaluationBase):
 
     model_config = {"from_attributes": True}
 
+
 class EvaluationResult(BaseModel):
     phq9_level: str
     gad7_level: str
     ai_analysis: str
     overall_risk: str
+
 
 class ChatEvaluationResponse(BaseModel):
     resumen: str

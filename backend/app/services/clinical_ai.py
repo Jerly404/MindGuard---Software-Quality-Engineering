@@ -1,14 +1,17 @@
-import os
 import json
 import logging
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any, Dict, List
+
 import httpx
 from groq import Groq
+
 from app.core.config import settings
 
 logger = logging.getLogger("mindguard")
 
 PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "prompts")
+
 
 def load_prompt(filename: str) -> str:
     path = os.path.join(PROMPT_DIR, filename)
@@ -19,12 +22,13 @@ def load_prompt(filename: str) -> str:
         logger.error(f"Error loading prompt {filename}: {e}")
         return ""
 
+
 class ClinicalAIService:
     def __init__(self):
         self.api_key = settings.GROQ_API_KEY
         self.model_id = "llama-3.3-70b-versatile"
         self.timeout_seconds = 10.0
-        
+
         if self.api_key:
             # We construct a custom httpx client to pass timeouts and configure the Groq SDK
             http_client = httpx.Client(timeout=self.timeout_seconds)
@@ -93,10 +97,7 @@ class ClinicalAIService:
 
             # Llamada al LLM con timeout implícito en el cliente HTTP de Groq
             completion = self.client.chat.completions.create(
-                model=self.model_id, 
-                messages=history, 
-                temperature=0.7, 
-                max_tokens=250
+                model=self.model_id, messages=history, temperature=0.7, max_tokens=250
             )
             return {"response": completion.choices[0].message.content, "options": []}
         except Exception as e:
@@ -108,11 +109,11 @@ class ClinicalAIService:
             "sentiment": "STABLE",
             "has_alert": False,
             "emociones_detectadas": {
-                "tristeza": 0.2, 
-                "ansiedad": 0.2, 
-                "estrés": 0.2, 
-                "sobrepensamiento": 0.1, 
-                "agotamiento_mental": 0.1
+                "tristeza": 0.2,
+                "ansiedad": 0.2,
+                "estrés": 0.2,
+                "sobrepensamiento": 0.1,
+                "agotamiento_mental": 0.1,
             },
             "factores_detectados": [],
             "riesgo_emocional": "bajo",
@@ -120,7 +121,7 @@ class ClinicalAIService:
             "recomendacion": "Continúa conversando con el asistente.",
             "label": "GROQ_ANALYSIS",
             "score": 0.99,
-            "patrones": ["Análisis dinámico"]
+            "patrones": ["Análisis dinámico"],
         }
 
         if not self.client:
@@ -139,7 +140,7 @@ class ClinicalAIService:
             )
             content = completion.choices[0].message.content
             result = json.loads(content)
-            
+
             # Garantizar que las claves existan para evitar KeyError en el llamador
             result.setdefault("sentiment", "STABLE")
             result.setdefault("has_alert", False)
@@ -163,7 +164,7 @@ class ClinicalAIService:
             "nivel_depresion": "Bajo",
             "puntos_clave": [],
             "recomendacion_profesional": "Sigue adelante.",
-            "plan_accion": []
+            "plan_accion": [],
         }
 
         if not self.client:
@@ -183,7 +184,7 @@ class ClinicalAIService:
             )
             content = completion.choices[0].message.content
             result = json.loads(content)
-            
+
             # Asegurar claves por defecto
             result.setdefault("resumen", "Evaluación completada.")
             result.setdefault("nivel_ansiedad", "Bajo")
