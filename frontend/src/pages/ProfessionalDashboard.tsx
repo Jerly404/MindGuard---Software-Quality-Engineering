@@ -236,8 +236,9 @@ const ProfessionalDashboard: React.FC = () => {
                         </div>
                         <form onSubmit={handleSchedule} className="p-8 space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Fecha y Hora</label>
+                                <label htmlFor="fecha_cita" className="text-[10px] font-black text-slate-400 uppercase ml-1">Fecha y Hora</label>
                                 <input 
+                                    id="fecha_cita"
                                     type="datetime-local" 
                                     required
                                     className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm font-bold"
