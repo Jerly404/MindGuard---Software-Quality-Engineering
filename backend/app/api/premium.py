@@ -66,13 +66,12 @@ async def resend_appointment_email(
 ):
     if current_user.rol != "profesional":
         raise HTTPException(status_code=403, detail="Solo profesionales pueden reenviar correos de citas")
-        
+
     enviado = await appointment_service.resend_appointment_email(appointment_id, current_user.id)
     if enviado:
         return {"mensaje": "Correo reenviado con éxito"}
     else:
         return {"mensaje": "El correo se generó en la consola del servidor (modo desarrollo o error de envío)"}
-
 
 
 @router.get("/appointments/me")
@@ -127,9 +126,11 @@ async def get_my_assignment(
 
     pro = await user_service.get_by_id(asig.id_profesional)
 
-    # Cálculo dinámico de días restantes en base a la fecha de inicio
-    limite = asig.fecha_inicio + timedelta(days=30)
-    dias_restantes = (limite - datetime.now(timezone.utc)).days
+    # Asegurar compatibilidad de zonas horarias (ambos naive) para evitar TypeError
+    fecha_inicio_naive = asig.fecha_inicio.replace(tzinfo=None) if asig.fecha_inicio.tzinfo else asig.fecha_inicio
+    limite = fecha_inicio_naive + timedelta(days=30)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    dias_restantes = (limite - now_naive).days
     dias_restantes = max(0, dias_restantes)
 
     return {

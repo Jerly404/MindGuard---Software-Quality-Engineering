@@ -300,14 +300,14 @@ class AppointmentService:
             professional = await self.repo.db.get(Usuario, professional_id)
             if patient and professional:
                 from app.services.email import email_service
-                
+
                 fecha_formateada = fecha_cita.strftime("%d/%m/%Y %H:%M")
                 await email_service.send_appointment_email(
                     email_to=patient.email,
                     patient_name=patient.nombre,
                     professional_name=professional.nombre,
                     date_str=fecha_formateada,
-                    meeting_link=link_unico
+                    meeting_link=link_unico,
                 )
         except Exception as e:
             logger.error(f"Error al enviar correo de agendamiento: {e}", exc_info=True)
@@ -318,26 +318,27 @@ class AppointmentService:
         appointment = await self.repo.db.get(Cita, appointment_id)
         if not appointment:
             raise HTTPException(status_code=404, detail="Cita no encontrada")
-            
+
         if appointment.id_profesional != professional_id:
             raise HTTPException(status_code=403, detail="No tienes permiso para reenviar esta cita")
-            
+
         try:
             patient = await self.repo.db.get(Usuario, appointment.id_paciente)
             professional = await self.repo.db.get(Usuario, appointment.id_profesional)
             if patient and professional:
                 from app.services.email import email_service
+
                 fecha_formateada = appointment.fecha_cita.strftime("%d/%m/%Y %H:%M")
                 return await email_service.send_appointment_email(
                     email_to=patient.email,
                     patient_name=patient.nombre,
                     professional_name=professional.nombre,
                     date_str=fecha_formateada,
-                    meeting_link=appointment.link_reunion
+                    meeting_link=appointment.link_reunion,
                 )
         except Exception as e:
             logger.error(f"Error al reenviar correo de agendamiento: {e}", exc_info=True)
-            
+
         return False
 
     async def list_by_user(self, user_id: int, rol: str) -> List[Dict[str, Any]]:

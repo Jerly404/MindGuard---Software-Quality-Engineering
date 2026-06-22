@@ -55,9 +55,11 @@ class EmailService:
             return False
         return True
 
-    async def send_appointment_email(self, email_to: str, patient_name: str, professional_name: str, date_str: str, meeting_link: str) -> bool:
+    async def send_appointment_email(
+        self, email_to: str, patient_name: str, professional_name: str, date_str: str, meeting_link: str
+    ) -> bool:
         print(f"📧 Attempting to send appointment email to {email_to}")
-        
+
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD or settings.SMTP_USER == "placeholder":
             print(f"\n\n*** APPOINTMENT EMAIL FOR {patient_name}: {meeting_link} ***\n\n")
             return False
@@ -87,7 +89,10 @@ class EmailService:
         """
 
         message = MessageSchema(
-            subject="Acceso a tu Videoconferencia - MindGuard IA", recipients=[email_to], body=html, subtype=MessageType.html
+            subject="Acceso a tu Videoconferencia - MindGuard IA",
+            recipients=[email_to],
+            body=html,
+            subtype=MessageType.html,
         )
 
         try:

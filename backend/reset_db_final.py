@@ -41,7 +41,7 @@ async def seed():
         result_pro = await db.execute(select(Usuario).where(Usuario.email == "psicologo@mindguard.ai"))
         if not result_pro.scalars().first():
             pro = Usuario(
-                nombre="Dr. Ricardo Gareca",
+                nombre="Dr. Clínico de Guardia",
                 email="psicologo@mindguard.ai",
                 password_hash=get_password_hash("admin123"),
                 rol="profesional",

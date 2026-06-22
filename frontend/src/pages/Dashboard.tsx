@@ -64,6 +64,7 @@ const Dashboard: React.FC = () => {
     const [paymentMethod, setPaymentMethod] = React.useState<'yape' | 'paypal' | null>(null);
     const [appointments, setAppointments] = React.useState<Appointment[]>([]);
     const [showBreathing, setShowBreathing] = React.useState(false);
+    const [openedAppointments, setOpenedAppointments] = React.useState<number[]>([]);
 
     const loadData = React.useCallback(async () => {
         try {
@@ -86,10 +87,11 @@ const Dashboard: React.FC = () => {
     const checkAutoOpenLink = React.useCallback(() => {
         const now = new Date();
         let hasChanges = false;
+        const newOpened = [...openedAppointments];
         
-        // Inmutabilidad de estado al actualizar citas
+        // Inmutabilidad de estado al actualizar citas y evitar bucles de apertura de pestañas
         const updatedAppointments = appointments.map(app => {
-            if (app.estado !== 'programada') return app;
+            if (app.estado !== 'programada' || newOpened.includes(app.id)) return app;
             const appDate = new Date(app.fecha);
             const diff = (appDate.getTime() - now.getTime()) / 60000;
             
@@ -97,15 +99,17 @@ const Dashboard: React.FC = () => {
                 console.log("¡Hora de la cita! Abriendo videoconferencia...");
                 window.open(app.link, '_blank');
                 hasChanges = true;
+                newOpened.push(app.id);
                 return { ...app, estado: 'en_curso' };
             }
             return app;
         });
 
         if (hasChanges) {
+            setOpenedAppointments(newOpened);
             setAppointments(updatedAppointments);
         }
-    }, [appointments]);
+    }, [appointments, openedAppointments]);
 
     const handleYapePayment = async () => {
         try {
@@ -120,12 +124,12 @@ const Dashboard: React.FC = () => {
 
     React.useEffect(() => {
         loadData();
-        const dataInterval = setInterval(loadData, 5000);
+        const dataInterval = setInterval(loadData, 3000);
         return () => clearInterval(dataInterval);
     }, [loadData]);
 
     React.useEffect(() => {
-        const timer = setInterval(checkAutoOpenLink, 5000);
+        const timer = setInterval(checkAutoOpenLink, 3000);
         return () => clearInterval(timer);
     }, [checkAutoOpenLink]);
 

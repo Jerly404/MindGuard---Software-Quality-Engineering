@@ -99,7 +99,7 @@ const ProfessionalDashboard: React.FC = () => {
 
     React.useEffect(() => {
         loadData(false);
-        const dataInterval = setInterval(() => loadData(true), 5000);
+        const dataInterval = setInterval(() => loadData(true), 3000);
         return () => clearInterval(dataInterval);
     }, [loadData]);
 
