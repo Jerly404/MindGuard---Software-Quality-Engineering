@@ -733,4 +733,110 @@ html.a11y-high-contrast *:focus-visible {
   outline-offset: 2px !important;
 }
 
+/* --- DARK MODE CONFIGURATION --- */
+html.dark {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --primary-light: #1e1b4b;
+}
+
+html.dark body {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark .bg-white {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-100 {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+html.dark .input-group {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+html.dark .input-group input {
+  color: #f8fafc !important;
+}
+
+html.dark .bg-slate-900 {
+  background-color: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
+
+html.dark .breathing-card {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+html.dark .breathing-modal-overlay {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+html.dark .success-message {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: #34d399 !important;
+}
+
+html.dark .error-message {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+}
+
+html.dark .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+}
+
+html.dark .text-rose-700 {
+  color: #fb7185 !important;
+}
+
+html.dark .bg-indigo-50 {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+}
+
+html.dark .text-indigo-700,
+html.dark .text-indigo-800 {
+  color: #818cf8 !important;
+}
+
+
 

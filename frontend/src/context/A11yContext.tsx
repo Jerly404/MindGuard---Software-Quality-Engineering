@@ -2,14 +2,17 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type LocaleMode = 'es' | 'en' | 'es-simple' | 'en-simple';
 export type FontSizeMode = 'normal' | 'large' | 'xlarge';
+export type ThemeMode = 'light' | 'dark';
 
 interface A11yContextProps {
   locale: LocaleMode;
   highContrast: boolean;
   fontSize: FontSizeMode;
+  theme: ThemeMode;
   setLocale: (locale: LocaleMode) => void;
   setHighContrast: (highContrast: boolean) => void;
   setFontSize: (fontSize: FontSizeMode) => void;
+  setTheme: (theme: ThemeMode) => void;
   t: (key: string) => string;
 }
 
@@ -23,6 +26,7 @@ const translations: Record<LocaleMode, Record<string, string>> = {
     'nav.langSelect': 'Cambiar idioma',
     'nav.professional': 'Dr/a. ',
     'nav.user': 'Usuario',
+    'nav.theme': 'Cambiar tema (Claro / Oscuro)',
 
     // Auth (Login / Signup)
     'auth.welcome': 'Bienvenido',
@@ -145,6 +149,7 @@ const translations: Record<LocaleMode, Record<string, string>> = {
     'nav.langSelect': 'Change language',
     'nav.professional': 'Dr. ',
     'nav.user': 'User',
+    'nav.theme': 'Toggle Theme (Light / Dark)',
 
     // Auth (Login / Signup)
     'auth.welcome': 'Welcome',
@@ -267,6 +272,7 @@ const translations: Record<LocaleMode, Record<string, string>> = {
     'nav.langSelect': 'Cambiar el idioma',
     'nav.professional': 'Doctor/a. ',
     'nav.user': 'Usuario',
+    'nav.theme': 'Cambiar luz (Claro / Oscuro)',
 
     // Auth (Login / Signup)
     'auth.welcome': 'Hola',
@@ -389,6 +395,7 @@ const translations: Record<LocaleMode, Record<string, string>> = {
     'nav.langSelect': 'Change language',
     'nav.professional': 'Dr. ',
     'nav.user': 'User',
+    'nav.theme': 'Change light (Light / Dark)',
 
     // Auth (Login / Signup)
     'auth.welcome': 'Hello',
@@ -540,6 +547,10 @@ export const A11yProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (safeGetItem('a11y-font-size', 'normal') as FontSizeMode);
   });
 
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    return (safeGetItem('a11y-theme', 'light') as ThemeMode);
+  });
+
   // Persistir y aplicar idioma
   const setLocale = (mode: LocaleMode) => {
     setLocaleState(mode);
@@ -580,6 +591,21 @@ export const A11yProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [fontSize]);
 
+  // Persistir y aplicar tema claro/oscuro
+  const setTheme = (mode: ThemeMode) => {
+    setThemeState(mode);
+    safeSetItem('a11y-theme', mode);
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+
   // Sincronizar atributos iniciales de HTML al montar
   useEffect(() => {
     const langAttr = locale.startsWith('en') ? 'en' : 'es';
@@ -599,9 +625,11 @@ export const A11yProvider: React.FC<{ children: React.ReactNode }> = ({ children
         locale,
         highContrast,
         fontSize,
+        theme,
         setLocale,
         setHighContrast,
         setFontSize,
+        setTheme,
         t,
       }}
     >

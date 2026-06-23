@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { authApi } from '../services/api';
-import { Shield, LogOut, User as UserIcon, Eye, Type, Globe } from 'lucide-react';
+import { Shield, LogOut, User as UserIcon, Eye, Type, Globe, Sun, Moon } from 'lucide-react';
 import { useA11y } from '../context/A11yContext';
 
 const Navbar = ({ onLogout }: { onLogout: () => void }) => {
     const user = authApi.getCurrentUser();
-    const { locale, setLocale, highContrast, setHighContrast, fontSize, setFontSize, t } = useA11y();
+    const { locale, setLocale, highContrast, setHighContrast, fontSize, setFontSize, theme, setTheme, t } = useA11y();
 
     const handleLogout = async () => {
         try {
@@ -19,6 +19,7 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
     };
 
     const toggleHighContrast = () => setHighContrast(!highContrast);
+    const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
     const cycleFontSize = () => {
         if (fontSize === 'normal') setFontSize('large');
@@ -60,6 +61,16 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
                                     <option value="en-simple">English (Easy Read)</option>
                                 </select>
                             </div>
+
+                            {/* Botón de Modo Claro / Oscuro */}
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"
+                                title={t('nav.theme')}
+                                aria-label={t('nav.theme')}
+                            >
+                                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                            </button>
 
                             <button
                                 onClick={toggleHighContrast}
