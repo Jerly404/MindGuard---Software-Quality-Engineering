@@ -2,15 +2,18 @@ import { render, screen } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import Assessment from './pages/Assessment'
 import { MemoryRouter } from 'react-router-dom'
+import { A11yProvider } from './context/A11yContext'
 
 // Mock scrollIntoView
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
 test('renders assessment heading', () => {
   render(
-    <MemoryRouter>
-      <Assessment />
-    </MemoryRouter>
+    <A11yProvider>
+      <MemoryRouter>
+        <Assessment />
+      </MemoryRouter>
+    </A11yProvider>
   )
   // Buscamos el texto real que aparece en tu HTML
   const heading = screen.getByText(/Chat Terapéutico MindGuard/i)
@@ -19,9 +22,11 @@ test('renders assessment heading', () => {
 
 test('renders intro section features', () => {
     render(
-      <MemoryRouter>
-        <Assessment />
-      </MemoryRouter>
+      <A11yProvider>
+        <MemoryRouter>
+          <Assessment />
+        </MemoryRouter>
+      </A11yProvider>
     )
     // Verificamos que aparezcan las características de la intro
     expect(screen.getByText(/Privacidad Total/i)).toBeInTheDocument()
@@ -30,9 +35,11 @@ test('renders intro section features', () => {
 
 test('renders start button', () => {
     render(
-      <MemoryRouter>
-        <Assessment />
-      </MemoryRouter>
+      <A11yProvider>
+        <MemoryRouter>
+          <Assessment />
+        </MemoryRouter>
+      </A11yProvider>
     )
     // Verificamos el botón de comenzar
     const button = screen.getByText(/Comenzar Conversación/i)

@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import FloatingChatbot from './components/FloatingChatbot';
 import { authApi } from './services/api';
+import { A11yProvider, useA11y } from './context/A11yContext';
 import './index.css';
 
 const ProtectedRoute = ({ children, roles }: { children: React.ReactNode, roles?: string[] }) => {
@@ -36,10 +37,11 @@ const HomeRedirect = () => {
     return <Dashboard />; 
 };
 
-function App() {
+function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(!!authApi.getCurrentUser());
   const user = authApi.getCurrentUser();
   const showChatbot = isAuthenticated && user && (user.rol === 'usuario' || user.rol === 'paciente');
+  const { locale } = useA11y();
 
   const handleAuthChange = () => {
     setIsAuthenticated(!!authApi.getCurrentUser());
@@ -48,8 +50,11 @@ function App() {
   return (
     <Router>
       <div className="App">
+        <a href="#main-content" className="skip-link">
+          {locale.startsWith('en') ? 'Skip to main content' : 'Saltar al contenido principal'}
+        </a>
         {isAuthenticated && <Navbar onLogout={handleAuthChange} />}
-        <main className="main-content">
+        <main id="main-content" className="main-content" tabIndex={-1}>
           <Routes>
             <Route path="/login" element={<Login onLogin={handleAuthChange} />} />
             <Route path="/signup" element={<Signup onSignup={handleAuthChange} />} />
@@ -62,7 +67,7 @@ function App() {
                   <HomeRedirect />
                 </ProtectedRoute>
               } 
-            />
+              />
             <Route 
               path="/admin-dashboard" 
               element={
@@ -70,7 +75,7 @@ function App() {
                   <AdminDashboard />
                 </ProtectedRoute>
               } 
-            />
+              />
             <Route 
               path="/professional-dashboard" 
               element={
@@ -78,7 +83,7 @@ function App() {
                   <ProfessionalDashboard />
                 </ProtectedRoute>
               } 
-            />
+              />
             <Route 
               path="/assessment" 
               element={
@@ -92,6 +97,14 @@ function App() {
         {showChatbot && <FloatingChatbot />}
       </div>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <A11yProvider>
+      <AppContent />
+    </A11yProvider>
   );
 }
 

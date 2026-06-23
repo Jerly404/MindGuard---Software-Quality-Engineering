@@ -701,4 +701,36 @@ html.a11y-high-contrast textarea {
   border: 2px solid #ffffff !important;
 }
 
+/* Highly visible focus indicator for keyboard navigation */
+*:focus-visible {
+  outline: 3px solid #4f46e5 !important;
+  outline-offset: 3px !important;
+}
+
+html.a11y-high-contrast *:focus-visible {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 3px !important;
+}
+
+/* Skip to content link style */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: #4f46e5;
+  color: white;
+  padding: 12px 24px;
+  z-index: 1000;
+  transition: top 0.2s ease;
+  font-weight: bold;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.skip-link:focus-visible {
+  top: 0;
+  outline: 3px solid #facc15 !important;
+  outline-offset: 2px !important;
+}
+
 

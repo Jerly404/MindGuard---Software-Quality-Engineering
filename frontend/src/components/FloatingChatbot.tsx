@@ -3,6 +3,7 @@ import { assessmentApi } from '../services/api';
 import { 
     X, Send, Bot, MessageCircle, FileText, CheckCircle2, AlertCircle, RefreshCw
 } from 'lucide-react';
+import { useA11y } from '../context/A11yContext';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -20,10 +21,32 @@ const FloatingChatbot: React.FC = () => {
     const [isLoadingReport, setIsLoadingReport] = React.useState(false);
     
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const { t, locale } = useA11y();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
+
+    // Auto-focus input on open
+    React.useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 100);
+        }
+    }, [isOpen]);
+
+    // Close on Escape key
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen]);
 
     const loadGreeting = async () => {
         setIsTyping(true);
@@ -32,7 +55,7 @@ const FloatingChatbot: React.FC = () => {
             setMessages([{ role: 'assistant', content: res.data.response }]);
             setOptions(res.data.options || []);
         } catch {
-            setMessages([{ role: 'assistant', content: "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
+            setMessages([{ role: 'assistant', content: locale.startsWith('en') ? "Hello, I am MindGuard 🌙. How are you feeling today?" : "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
         } finally {
             setIsTyping(false);
         }
@@ -53,7 +76,7 @@ const FloatingChatbot: React.FC = () => {
             setMessages([...newMessages, { role: 'assistant', content: res.data.response }]);
             setOptions(res.data.options || []);
         } catch {
-            setMessages([...newMessages, { role: 'assistant', content: "Lo siento, tuve un problema de conexión." }]);
+            setMessages([...newMessages, { role: 'assistant', content: locale.startsWith('en') ? "Sorry, I had a connection problem." : "Lo siento, tuve un problema de conexión." }]);
         } finally {
             setIsTyping(false);
         }
@@ -62,33 +85,31 @@ const FloatingChatbot: React.FC = () => {
     const generateReport = async () => {
         setIsLoadingReport(true);
         try {
-            // Reutilizamos el endpoint de análisis (ajustado en el backend si fuera necesario)
             const res = await assessmentApi.submitChat(messages, "final");
             const data = res.data;
 
             const getLevelFromScore = (score: number) => {
-                if (score >= 15) return "Alta";
-                if (score >= 10) return "Moderada";
-                if (score >= 5) return "Leve";
-                return "Baja";
+                if (score >= 15) return t('assess.severityHigh');
+                if (score >= 10) return t('assess.severityMed');
+                if (score >= 5) return t('assess.severityLow');
+                return t('assess.severityNone');
             };
 
             const mappedReport = {
                 nivel_ansiedad: getLevelFromScore(data.gad7Score),
                 nivel_depresion: getLevelFromScore(data.phq9Score),
-                resumen: data.resultadoIA || data.analisis_detallado?.interpretacion || "Evaluación completada",
+                resumen: data.resultadoIA || data.analisis_detallado?.interpretacion || (locale.startsWith('en') ? "Assessment completed" : "Evaluación completada"),
                 plan_accion: (data.analisis_detallado?.patrones && data.analisis_detallado.patrones.length > 0) ? data.analisis_detallado.patrones : null,
-                recomendacion: data.analisis_detallado?.recomendacion || "Consulte a un especialista."
+                recomendacion: data.analisis_detallado?.recomendacion || (locale.startsWith('en') ? "Consult a specialist." : "Consulte a un especialista.")
             };
 
             setReport(mappedReport);
         } catch {
-            alert("No se pudo generar el reporte en este momento.");
+            alert(locale.startsWith('en') ? "Could not generate report at this time." : "No se pudo generar el reporte en este momento.");
         } finally {
             setIsLoadingReport(false);
         }
     };
-
 
     React.useEffect(() => {
         if (isOpen && messages.length === 0) {
@@ -105,8 +126,8 @@ const FloatingChatbot: React.FC = () => {
             <button 
                 onClick={() => setIsOpen(true)} 
                 className="fixed bottom-6 right-6 h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-50 animate-bounce"
-                aria-label="Abrir asistente de chat de MindGuard"
-                title="Chatear con MindGuard"
+                aria-label={t('chat.open')}
+                title={t('chat.open')}
             >
                 <MessageCircle size={32} aria-hidden="true" />
             </button>
@@ -114,35 +135,36 @@ const FloatingChatbot: React.FC = () => {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50 border border-slate-100 animate-in slide-in-from-bottom-10">
+        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50 border border-slate-100 animate-in slide-in-from-bottom-10" role="dialog" aria-modal="true" aria-labelledby="chat-widget-header">
             {/* Header */}
             <div className="bg-indigo-600 p-4 text-white flex justify-between items-center shadow-lg">
                 <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-xl"><Bot size={20} /></div>
+                    <div className="bg-white/20 p-2 rounded-xl" aria-hidden="true"><Bot size={20} /></div>
                     <div>
-                        <p className="text-xs font-bold leading-none">MindGuard Pro</p>
+                        <p id="chat-widget-header" className="text-xs font-bold leading-none">{t('chat.header')}</p>
                         <p className="text-[10px] text-indigo-200 mt-1 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Sistema Inteligente Activo
+                            <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse" aria-hidden="true"></span> {t('chat.systemActive')}
                         </p>
                     </div>
                 </div>
                 <button 
                     onClick={() => setIsOpen(false)} 
                     className="hover:bg-white/20 p-1.5 rounded-full transition-colors"
-                    aria-label="Cerrar chat de MindGuard"
-                    title="Cerrar chat"
+                    aria-label={t('chat.close')}
+                    title={t('chat.close')}
                 >
                     <X size={20} aria-hidden="true" />
                 </button>
             </div>
 
             {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" role="log" aria-live="polite" aria-label="Historial de conversación del chatbot">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" role="log" aria-live="polite" aria-label={t('chat.header')}>
                 {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
                         <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] leading-relaxed shadow-sm ${
                             m.role === 'assistant' ? 'bg-white text-slate-700 border border-slate-100' : 'bg-indigo-600 text-white'
                         }`}>
+                            <span className="sr-only">{m.role === 'assistant' ? 'Asistente: ' : 'Tú: '}</span>
                             {m.content}
                         </div>
                     </div>
@@ -166,8 +188,8 @@ const FloatingChatbot: React.FC = () => {
                             disabled={isLoadingReport}
                             className="flex items-center gap-2 bg-emerald-500 text-white px-6 py-2.5 rounded-2xl text-[11px] font-bold hover:bg-emerald-600 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
                         >
-                            {isLoadingReport ? <RefreshCw className="animate-spin" size={16} /> : <FileText size={16} />}
-                            Generar Reporte del Estado Mental
+                            {isLoadingReport ? <RefreshCw className="animate-spin" size={16} aria-hidden="true" /> : <FileText size={16} aria-hidden="true" />}
+                            {t('chat.generateReport')}
                         </button>
                     </div>
                 )}
@@ -175,27 +197,27 @@ const FloatingChatbot: React.FC = () => {
                 {/* Visualización del Reporte */}
                 {report && (
                     <div className="bg-white border-2 border-emerald-100 rounded-3xl p-5 shadow-xl animate-in zoom-in-95 duration-500">
-                        <div className="flex items-center gap-2 text-emerald-600 mb-3">
+                        <div className="flex items-center gap-2 text-emerald-600 mb-3" aria-hidden="true">
                             <CheckCircle2 size={18} />
-                            <h3 className="text-xs font-bold uppercase tracking-wider">Reporte de Evaluación Diaria</h3>
+                            <h3 className="text-xs font-bold uppercase tracking-wider">{t('chat.reportTitle')}</h3>
                         </div>
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="bg-rose-50 p-3 rounded-2xl">
-                                    <p className="text-[9px] text-rose-600 font-bold uppercase">Ansiedad</p>
+                                    <p className="text-[9px] text-rose-600 font-bold uppercase">{t('dash.chartAnxiety')}</p>
                                     <p className="text-sm font-black text-rose-700">{report.nivel_ansiedad || report.riesgo_emocional}</p>
                                 </div>
                                 <div className="bg-indigo-50 p-3 rounded-2xl">
-                                    <p className="text-[9px] text-indigo-600 font-bold uppercase">Depresión</p>
-                                    <p className="text-sm font-black text-indigo-700">{report.nivel_depresion || "Baja"}</p>
+                                    <p className="text-[9px] text-indigo-600 font-bold uppercase">{t('dash.chartDepression')}</p>
+                                    <p className="text-sm font-black text-indigo-700">{report.nivel_depresion || t('assess.severityNone')}</p>
                                 </div>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 mb-1">Interpretación:</p>
+                                <p className="text-[10px] font-bold text-slate-500 mb-1">{t('chat.interpretation')}</p>
                                 <p className="text-[10px] text-slate-700 leading-relaxed italic">"{report.resumen || report.interpretacion}"</p>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-600 mb-2 flex items-center gap-1"><AlertCircle size={12}/> Plan de Acción:</p>
+                                <p className="text-[10px] font-bold text-slate-600 mb-2 flex items-center gap-1"><AlertCircle size={12} aria-hidden="true" /> {t('chat.actionPlan')}</p>
                                 <ul className="text-[9px] text-slate-600 space-y-1">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {(report.plan_accion || [report.recomendacion]).map((step: any, i: number) => (
@@ -209,7 +231,7 @@ const FloatingChatbot: React.FC = () => {
 
                 {isTyping && (
                     <div className="flex justify-start">
-                        <div className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-100 flex gap-1">
+                        <div className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-100 flex gap-1" aria-label="Asistente escribiendo...">
                             <div className="h-1.5 w-1.5 bg-indigo-300 rounded-full animate-bounce"></div>
                             <div className="h-1.5 w-1.5 bg-indigo-300 rounded-full animate-bounce delay-75"></div>
                             <div className="h-1.5 w-1.5 bg-indigo-300 rounded-full animate-bounce delay-150"></div>
@@ -222,22 +244,23 @@ const FloatingChatbot: React.FC = () => {
             {/* Input */}
             <div className="p-4 bg-white border-t border-slate-100">
                 <div className="relative">
-                    <label htmlFor="floating-chat-input" className="sr-only">Conversa con MindGuard</label>
+                    <label htmlFor="floating-chat-input" className="sr-only">{t('chat.placeholder')}</label>
                     <input 
                         id="floating-chat-input"
+                        ref={inputRef}
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Conversa con MindGuard..."
+                        placeholder={t('chat.placeholder')}
                         className="w-full p-4 pr-12 bg-slate-50 border-none rounded-2xl text-xs focus:ring-2 focus:ring-indigo-600 outline-none transition-all shadow-inner"
-                        aria-label="Mensaje para el Asistente MindGuard"
+                        aria-required="true"
                     />
                     <button 
                         onClick={() => handleSendMessage()} 
                         className="absolute right-3 top-2.5 p-2 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-colors"
-                        aria-label="Enviar mensaje"
-                        title="Enviar"
+                        aria-label={t('assess.sendButton')}
+                        title={t('assess.sendButton')}
                     >
                         <Send size={16} aria-hidden="true" />
                     </button>

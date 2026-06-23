@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { authApi } from "../services/api";
+import { useA11y } from "../context/A11yContext";
 
 const AdminDashboard: React.FC = () => {
   const [allUsers, setAllUsers] = React.useState<any[]>([]);
@@ -20,6 +21,7 @@ const AdminDashboard: React.FC = () => {
   >("pacientes");
   const [isAddingPro, setIsAddingPro] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const { t } = useA11y();
 
   // Formulario para nuevo profesional
   const [newPro, setNewPro] = React.useState({
@@ -120,11 +122,11 @@ const AdminDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-              <Shield className="text-indigo-600" size={36} />
-              Centro de Mando MindGuard
+              <Shield className="text-indigo-600" size={36} aria-hidden="true" />
+              {t('admin.title')}
             </h1>
             <p className="text-slate-500 font-medium mt-1">
-              Supervisión en tiempo real de usuarios y personal clínico
+              {t('admin.sub')}
             </p>
           </div>
           <div className="flex gap-3">

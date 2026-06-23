@@ -5,6 +5,7 @@ import {
     Send, Video, X
 } from 'lucide-react';
 import { premiumApi } from '../services/api';
+import { useA11y } from '../context/A11yContext';
 
 const ProfessionalDashboard: React.FC = () => {
     const [patients, setPatients] = React.useState<any[]>([]);
@@ -13,6 +14,7 @@ const ProfessionalDashboard: React.FC = () => {
     const [loading, setLoading] = React.useState(true);
     const [selectedPatient, setSelectedPatient] = React.useState<any | null>(null);
     const [patientHistory, setPatientHistory] = React.useState<any[]>([]);
+    const { t } = useA11y();
     
     // Modal states
     const [isScheduleModalOpen, setIsScheduleModalOpen] = React.useState(false);
@@ -108,8 +110,8 @@ const ProfessionalDashboard: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 <header className="mb-10 flex justify-between items-end">
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900">Panel Clínico</h1>
-                        <p className="text-slate-500 font-medium">Gestión de Pacientes y Supervisión en Tiempo Real</p>
+                        <h1 className="text-3xl font-black text-slate-900">{t('prof.title')}</h1>
+                        <p className="text-slate-500 font-medium">{t('prof.sub')}</p>
                     </div>
                     <button onClick={() => loadData(false)} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 shadow-sm transition-all">
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />

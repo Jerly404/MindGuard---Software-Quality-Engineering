@@ -5,6 +5,7 @@ import {
     ArrowRight, CheckCircle, Brain, HeartPulse, 
     ShieldCheck, AlertTriangle, Send, User, Bot, Sparkles, RefreshCw
 } from 'lucide-react';
+import { useA11y } from '../context/A11yContext';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -25,6 +26,7 @@ const Assessment: React.FC = () => {
     
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const { t, locale } = useA11y();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,7 +39,7 @@ const Assessment: React.FC = () => {
             setMessages([{ role: 'assistant', content: res.data.response }]);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
-            setMessages([{ role: 'assistant', content: "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
+            setMessages([{ role: 'assistant', content: locale.startsWith('en') ? "Hello, I am MindGuard 🌙. How have you been feeling today?" : "Hola, soy MindGuard 🌙. ¿Cómo te has sentido hoy?" }]);
         } finally {
             setIsTyping(false);
         }
@@ -52,7 +54,7 @@ const Assessment: React.FC = () => {
             setStep(2);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            alert("Error al analizar la conversación.");
+            alert(locale.startsWith('en') ? "Error analyzing conversation." : "Error al analizar la conversación.");
         } finally {
             setLoadingResult(false);
         }
@@ -80,7 +82,7 @@ const Assessment: React.FC = () => {
             }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            setMessages(prev => [...prev, { role: 'assistant', content: "Hubo un pequeño error. ¿Podrías repetirme eso?" }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: locale.startsWith('en') ? "There was a small error. Could you repeat that?" : "Hubo un pequeño error. ¿Podrías repetirme eso?" }]);
         }
     };
 
@@ -92,30 +94,29 @@ const Assessment: React.FC = () => {
     }, [step, messages, isTyping]);
 
     const renderConsent = () => (
-        <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in slide-in-from-bottom-4">
+        <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in slide-in-from-bottom-4" role="region" aria-labelledby="consent-title">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
-                <div className="h-20 w-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600">
+                <div className="h-20 w-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600" aria-hidden="true">
                     <ShieldCheck size={40} />
                 </div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-4">Chat Terapéutico MindGuard</h1>
+                <h1 id="consent-title" className="text-3xl font-bold text-slate-900 mb-4">{t('assess.consentTitle')}</h1>
                 <p className="text-slate-600 mb-8 text-lg">
-                    En lugar de formularios fríos, hoy tendremos una pequeña charla. 
-                    Nuestra IA analizará tus respuestas para brindarte el mejor apoyo posible.
+                    {t('assess.consentSub')}
                 </p>
                 
                 <div className="grid gap-4 text-left mb-10">
                     <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl">
-                        <CheckCircle className="text-emerald-500 shrink-0" size={24} />
+                        <CheckCircle className="text-emerald-500 shrink-0" size={24} aria-hidden="true" />
                         <div>
-                            <p className="font-bold text-slate-800">Privacidad Total</p>
-                            <p className="text-sm text-slate-500">Tus conversaciones son privadas y seguras.</p>
+                            <p className="font-bold text-slate-800">{t('assess.privacy')}</p>
+                            <p className="text-sm text-slate-500">{t('assess.privacySub')}</p>
                         </div>
                     </div>
                     <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl">
-                        <Brain className="text-indigo-500 shrink-0" size={24} />
+                        <Brain className="text-indigo-500 shrink-0" size={24} aria-hidden="true" />
                         <div>
-                            <p className="font-bold text-slate-800">Análisis Inteligente</p>
-                            <p className="text-sm text-slate-500">Detectamos patrones emocionales en tiempo real.</p>
+                            <p className="font-bold text-slate-800">{t('assess.analysis')}</p>
+                            <p className="text-sm text-slate-500">{t('assess.analysisSub')}</p>
                         </div>
                     </div>
                 </div>
@@ -123,31 +124,31 @@ const Assessment: React.FC = () => {
                 <button 
                     onClick={() => setStep(1)}
                     className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-lg hover:bg-indigo-700 transition-all flex justify-center items-center gap-2 shadow-lg shadow-indigo-200"
-                    aria-label="Comenzar conversación para evaluación de salud mental"
+                    aria-label={t('assess.startChat')}
                 >
-                    Comenzar Conversación <ArrowRight size={20} aria-hidden="true" />
+                    {t('assess.startChat')} <ArrowRight size={20} aria-hidden="true" />
                 </button>
             </div>
         </div>
     );
 
     const renderChat = () => (
-        <div className="max-w-3xl mx-auto h-[80vh] flex flex-col bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden my-4 animate-in zoom-in-95 duration-300">
+        <div className="max-w-3xl mx-auto h-[80vh] flex flex-col bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden my-4 animate-in zoom-in-95 duration-300" role="region" aria-labelledby="chat-title">
             {/* Header */}
             <div className="px-6 py-4 bg-indigo-600 text-white flex items-center gap-3">
                 <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center" aria-hidden="true">
                     <Bot size={24} />
                 </div>
                 <div>
-                    <h3 className="font-bold">Asistente MindGuard</h3>
+                    <h3 id="chat-title" className="font-bold">{t('assess.chatTitle')}</h3>
                     <p className="text-xs text-indigo-100 flex items-center gap-1">
-                        <span className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" aria-hidden="true"></span> IA Activa
+                        <span className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" aria-hidden="true"></span> {t('assess.aiActive')}
                     </p>
                 </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50" role="log" aria-live="polite" aria-label="Historial de mensajes de chat">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50" role="log" aria-live="polite" aria-label={t('assess.chatTitle')}>
                 {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-in slide-in-from-bottom-2`}>
                         <div className={`flex gap-3 max-w-[80%] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -176,8 +177,8 @@ const Assessment: React.FC = () => {
                 )}
                 {loadingResult && (
                     <div className="flex flex-col items-center justify-center py-8 text-indigo-600 gap-4" aria-live="assertive">
-                        <RefreshCw className="animate-spin" size={32} />
-                        <p className="text-sm font-medium">Analizando patrones emocionales...</p>
+                        <RefreshCw className="animate-spin" size={32} aria-hidden="true" />
+                        <p className="text-sm font-medium">{t('assess.analyzing')}</p>
                     </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -186,29 +187,29 @@ const Assessment: React.FC = () => {
             {/* Input Area */}
             <div className="p-4 bg-white border-t border-slate-100">
                 <div className="relative flex items-center">
-                    <label htmlFor="chat-textarea" className="sr-only">Escribe tu respuesta aquí</label>
+                    <label htmlFor="chat-textarea" className="sr-only">{t('assess.inputPlaceholder')}</label>
                     <textarea 
                         id="chat-textarea"
                         rows={1}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
-                        placeholder="Escribe tu respuesta aquí..."
+                        placeholder={t('assess.inputPlaceholder')}
                         className="w-full p-4 pr-16 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none resize-none text-sm"
-                        aria-label="Escribe tu mensaje para el Asistente MindGuard"
+                        aria-required="true"
                     />
                     <button 
                         onClick={handleSendMessage}
                         disabled={!inputValue.trim() || isTyping || loadingResult}
                         className="absolute right-2 p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:grayscale transition-all"
-                        aria-label="Enviar mensaje"
-                        title="Enviar"
+                        aria-label={t('assess.sendButton')}
+                        title={t('assess.sendButton')}
                     >
                         <Send size={20} aria-hidden="true" />
                     </button>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2 text-center">
-                    Tus mensajes son procesados localmente para garantizar tu privacidad.
+                    {locale.startsWith('en') ? 'Your messages are processed safely to protect your privacy.' : 'Tus mensajes son procesados de forma segura para proteger tu privacidad.'}
                 </p>
             </div>
         </div>
@@ -218,8 +219,19 @@ const Assessment: React.FC = () => {
         const risk = result.nivelRiesgo.toLowerCase();
         const analysis = result.analisis_detallado || {};
         
+        let riskText = result.nivelRiesgo;
+        if (result.has_high_risk || risk === 'grave') {
+            riskText = t('assess.severityHigh');
+        } else if (risk === 'moderado') {
+            riskText = t('assess.severityMed');
+        } else if (risk === 'leve') {
+            riskText = t('assess.severityLow');
+        } else {
+            riskText = t('assess.severityNone');
+        }
+
         return (
-            <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in zoom-in-95 duration-500">
+            <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in zoom-in-95 duration-500" role="region" aria-labelledby="result-title">
                 <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden">
                     {/* Header del Resultado */}
                     <div className={`p-8 text-center text-white ${
@@ -227,11 +239,11 @@ const Assessment: React.FC = () => {
                         risk === 'grave' ? 'bg-rose-600' :
                         risk === 'moderado' ? 'bg-amber-500' : 'bg-emerald-500'
                     }`}>
-                        <div className="inline-flex p-4 bg-white/20 rounded-full mb-4">
+                        <div className="inline-flex p-4 bg-white/20 rounded-full mb-4" aria-hidden="true">
                             {result.has_high_risk ? <AlertTriangle size={48} /> : <Sparkles size={48} />}
                         </div>
-                        <h1 className="text-3xl font-extrabold mb-2">Interpretación Emocional</h1>
-                        <p className="text-white/90 text-lg uppercase font-bold tracking-wider">{analysis.riesgo_emocional ? `Riesgo: ${analysis.riesgo_emocional}` : result.nivelRiesgo}</p>
+                        <h1 id="result-title" className="text-3xl font-extrabold mb-2">{t('assess.resultTitle')}</h1>
+                        <p className="text-white/90 text-lg uppercase font-bold tracking-wider">{riskText}</p>
                     </div>
 
                     <div className="p-8">
@@ -240,7 +252,7 @@ const Assessment: React.FC = () => {
                             <div className="space-y-6">
                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
-                                        <Bot className="text-indigo-600" /> Mi Observación
+                                        <Bot className="text-indigo-600" aria-hidden="true" /> {t('assess.aiInterpretation')}
                                     </h3>
                                     <p className="text-slate-700 text-sm leading-relaxed mb-4">
                                         {analysis.interpretacion || result.resultadoIA}
@@ -264,20 +276,20 @@ const Assessment: React.FC = () => {
                             {/* Recomendación y Plan */}
                             <div className="space-y-6">
                                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <HeartPulse className="text-rose-500" /> Recomendación Personalizada
+                                    <HeartPulse className="text-rose-500" aria-hidden="true" /> {t('assess.actionPlan')}
                                 </h3>
                                 
                                 <div className="p-6 bg-indigo-50 text-indigo-800 rounded-3xl border border-indigo-100">
                                     <p className="text-sm leading-relaxed italic">
-                                        "{analysis.recomendacion || "Hoy intenta enfocar tu atención en algo físico y presente para descansar mentalmente."}"
+                                        "{analysis.recomendacion || (locale.startsWith('en') ? 'Today, try focusing on physical presence to rest your mind.' : 'Hoy intenta enfocar tu atención en algo físico y presente para descansar mentalmente.')}"
                                     </p>
                                 </div>
 
                                 {result.has_high_risk && (
                                     <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
-                                        <p className="font-bold text-rose-700 text-sm mb-1">Apoyo Inmediato</p>
-                                        <p className="text-xs text-rose-600">Llama al 113 (Opción 5) - Línea gratuita de salud mental.</p>
-                                        <a href="tel:113" className="mt-2 block bg-rose-600 text-white text-center py-2 rounded-lg text-sm font-bold">Llamar 113 Ahora</a>
+                                        <p className="font-bold text-rose-700 text-sm mb-1">{locale.startsWith('en') ? 'Immediate Support' : 'Apoyo Inmediato'}</p>
+                                        <p className="text-xs text-rose-600">{locale.startsWith('en') ? 'Call 113 (Option 5) - Free Mental Health Line.' : 'Llama al 113 (Opción 5) - Línea gratuita de salud mental Perú / Consulte a un profesional.'}</p>
+                                        <a href="tel:113" className="mt-2 block bg-rose-600 text-white text-center py-2 rounded-lg text-sm font-bold">{locale.startsWith('en') ? 'Call Now' : 'Llamar Ahora'}</a>
                                     </div>
                                 )}
                             </div>
@@ -286,7 +298,7 @@ const Assessment: React.FC = () => {
                         {/* Gráfico Simple de Emociones */}
                         {analysis.emociones_detectadas && (
                             <div className="mt-8 pt-8 border-t border-slate-100">
-                                <h3 className="text-sm font-bold text-slate-400 mb-4 uppercase text-center tracking-widest">Niveles Detectados</h3>
+                                <h3 className="text-sm font-bold text-slate-400 mb-4 uppercase text-center tracking-widest">{locale.startsWith('en') ? 'Detected Levels' : 'Niveles Detectados'}</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {Object.entries(analysis.emociones_detectadas).map(([emo, val]: [string, any]) => (
@@ -303,10 +315,10 @@ const Assessment: React.FC = () => {
 
                         <div className="mt-12 flex flex-col md:flex-row gap-4 justify-center">
                             <button onClick={() => navigate('/')} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all">
-                                Ir al Dashboard
+                                {t('assess.backHome')}
                             </button>
                             <button onClick={() => window.print()} className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 transition-all">
-                                Guardar Reporte
+                                {locale.startsWith('en') ? 'Save Report (Print)' : 'Guardar Reporte (Imprimir)'}
                             </button>
                         </div>
                     </div>

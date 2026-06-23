@@ -2,12 +2,14 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { Mail, Lock } from 'lucide-react';
+import { useA11y } from '../context/A11yContext';
 
 const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [error, setError] = React.useState('');
     const navigate = useNavigate();
+    const { t } = useA11y();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -24,17 +26,17 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <h1>Bienvenido</h1>
-                <p>Inicia sesión en MindGuard IA</p>
-                {error && <div className="error-message">{error}</div>}
+                <h1>{t('auth.welcome')}</h1>
+                <p>{t('auth.loginSub')}</p>
+                {error && <div className="error-message" role="alert" aria-live="assertive">{error}</div>}
                 <form onSubmit={handleLogin}>
                     <div className="input-group">
-                        <label htmlFor="login-email" className="sr-only">Correo Electrónico</label>
+                        <label htmlFor="login-email" className="sr-only">{t('auth.email')}</label>
                         <Mail size={18} aria-hidden="true" />
                         <input 
                             id="login-email"
                             type="email" 
-                            placeholder="Correo Electrónico" 
+                            placeholder={t('auth.email')} 
                             value={email} 
                             onChange={(e) => setEmail(e.target.value)} 
                             required 
@@ -42,12 +44,12 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
                         />
                     </div>
                     <div className="input-group">
-                        <label htmlFor="login-password" className="sr-only">Contraseña</label>
+                        <label htmlFor="login-password" className="sr-only">{t('auth.password')}</label>
                         <Lock size={18} aria-hidden="true" />
                         <input 
                             id="login-password"
                             type="password" 
-                            placeholder="Contraseña" 
+                            placeholder={t('auth.password')} 
                             value={password} 
                             onChange={(e) => setPassword(e.target.value)} 
                             required 
@@ -55,12 +57,13 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
                         />
                     </div>
                     <div className="forgot-password-link">
-                        <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+                        <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
                     </div>
-                    <button type="submit" className="btn-primary" aria-label="Iniciar sesión en la aplicación">Iniciar Sesión</button>
+                    <button type="submit" className="btn-primary" aria-label={t('auth.loginBtn')}>{t('auth.loginBtn')}</button>
                 </form>
                 <div className="auth-footer">
-                    ¿No tienes una cuenta? <Link to="/signup">Regístrate aquí</Link>
+                    {t('auth.noAccount')}{' '}
+                    <Link to="/signup">{t('auth.registerHere')}</Link>
                 </div>
             </div>
         </div>

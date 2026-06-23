@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import { premiumApi } from './services/api';
-import React from 'react';
+import { A11yProvider } from './context/A11yContext';
 
 // Mock the API service
 vi.mock('./services/api', () => {
@@ -49,7 +49,11 @@ describe('ProfessionalDashboard tests', () => {
     });
 
     it('should render patients, earnings, and appointments correctly', async () => {
-        render(<ProfessionalDashboard />);
+        render(
+            <A11yProvider>
+                <ProfessionalDashboard />
+            </A11yProvider>
+        );
 
         // Wait for data load
         await waitFor(() => {
@@ -70,7 +74,11 @@ describe('ProfessionalDashboard tests', () => {
     });
 
     it('should call resendAppointmentEmail when clicking REENVIAR ACCESO', async () => {
-        render(<ProfessionalDashboard />);
+        render(
+            <A11yProvider>
+                <ProfessionalDashboard />
+            </A11yProvider>
+        );
 
         await waitFor(() => {
             expect(screen.getByText('REENVIAR ACCESO')).toBeInTheDocument();
@@ -86,7 +94,11 @@ describe('ProfessionalDashboard tests', () => {
     });
 
     it('should open scheduling modal and submit a new appointment', async () => {
-        render(<ProfessionalDashboard />);
+        render(
+            <A11yProvider>
+                <ProfessionalDashboard />
+            </A11yProvider>
+        );
 
         await waitFor(() => {
             expect(screen.getByText('AGENDAR')).toBeInTheDocument();
