@@ -36,15 +36,15 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
                         <div className="flex-shrink-0 flex items-center">
                             <Link to="/" className="flex items-center gap-2" aria-label={`${t('nav.title')} - ${t('nav.user')}`}>
                                 <Shield className="h-8 w-8 text-indigo-600" />
-                                <span className="font-bold text-xl text-slate-900">{t('nav.title')}</span>
+                                <span className="font-bold text-xl text-slate-900 hidden sm:inline">{t('nav.title')}</span>
                             </Link>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         {/* Controles de Accesibilidad */}
-                        <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
+                        <div className="flex items-center gap-1 sm:gap-2 border-r border-slate-200 pr-2 sm:pr-4">
                             {/* Selector de Idioma */}
-                            <div className="flex items-center gap-1.5 mr-2">
+                            <div className="flex items-center gap-1.5 mr-1 sm:mr-2">
                                 <Globe className="h-4 w-4 text-slate-400" aria-hidden="true" />
                                 <label htmlFor="nav-lang-select" className="sr-only">
                                     {t('nav.langSelect')}
@@ -53,47 +53,47 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
                                     id="nav-lang-select"
                                     value={locale}
                                     onChange={(e) => setLocale(e.target.value as any)}
-                                    className="text-xs bg-slate-50 border border-slate-200 rounded-md p-1.5 focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700 outline-none"
+                                    className="text-[10px] sm:text-xs bg-slate-50 border border-slate-200 rounded-md p-1 focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700 outline-none max-w-[65px] sm:max-w-none"
                                 >
-                                    <option value="es">Español</option>
-                                    <option value="en">English</option>
-                                    <option value="es-simple">Español (Lectura Fácil)</option>
-                                    <option value="en-simple">English (Easy Read)</option>
+                                    <option value="es">ES</option>
+                                    <option value="en">EN</option>
+                                    <option value="es-simple">ES (Fácil)</option>
+                                    <option value="en-simple">EN (Easy)</option>
                                 </select>
                             </div>
 
                             {/* Botón de Modo Claro / Oscuro */}
                             <button
                                 onClick={toggleTheme}
-                                className="p-2 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"
+                                className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"
                                 title={t('nav.theme')}
                                 aria-label={t('nav.theme')}
                             >
-                                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                                {theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />}
                             </button>
 
                             <button
                                 onClick={toggleHighContrast}
-                                className="p-2 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"
+                                className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"
                                 title={t('nav.highContrast')}
                                 aria-label={t('nav.highContrast')}
                             >
-                                <Eye className="h-5 w-5" />
+                                <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                             </button>
                             <button
                                 onClick={cycleFontSize}
-                                className="p-2 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors flex items-center gap-1 font-bold text-xs"
+                                className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors flex items-center gap-0.5 font-bold text-xs"
                                 title={t('nav.fontSize')}
                                 aria-label={t('nav.fontSize')}
                             >
-                                <Type className="h-5 w-5" />
-                                <span className="uppercase text-[10px]" aria-hidden="true">
+                                <Type className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <span className="uppercase text-[9px]" aria-hidden="true">
                                     {fontSize === 'normal' ? 'A' : fontSize === 'large' ? 'A+' : 'A++'}
                                 </span>
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-2 text-slate-600">
+                        <div className="hidden md:flex items-center gap-2 text-slate-600">
                             <UserIcon className="h-5 w-5" />
                             <span className="font-medium">
                                 {user?.rol === 'profesional' ? t('nav.professional') : ''}
@@ -109,11 +109,12 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                             aria-label={t('nav.logout')}
+                            title={t('nav.logout')}
                         >
                             <LogOut className="h-4 w-4" />
-                            {t('nav.logout')}
+                            <span className="hidden sm:inline">{t('nav.logout')}</span>
                         </button>
                     </div>
                 </div>

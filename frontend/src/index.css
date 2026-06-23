@@ -829,14 +829,127 @@ html.dark .text-rose-700 {
   color: #fb7185 !important;
 }
 
-html.dark .bg-indigo-50 {
-  background-color: rgba(79, 70, 229, 0.1) !important;
+html.dark .text-rose-600 {
+  color: #fda4af !important;
 }
 
-html.dark .text-indigo-700,
+/* Indigo overrides in dark mode */
+html.dark .bg-indigo-50 {
+  background-color: rgba(79, 70, 229, 0.15) !important;
+}
+
+html.dark .border-indigo-100 {
+  border-color: rgba(129, 140, 248, 0.2) !important;
+}
+
+html.dark .border-indigo-200 {
+  border-color: rgba(129, 140, 248, 0.3) !important;
+}
+
+html.dark .text-indigo-900 {
+  color: #e0e7ff !important;
+}
+
 html.dark .text-indigo-800 {
+  color: #c7d2fe !important;
+}
+
+html.dark .text-indigo-700 {
+  color: #a5b4fc !important;
+}
+
+html.dark .text-indigo-600,
+html.dark .text-indigo-500 {
   color: #818cf8 !important;
 }
+
+/* Amber overrides in dark mode */
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+html.dark .border-amber-100 {
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+html.dark .text-amber-900,
+html.dark .text-amber-700 {
+  color: #fef08a !important;
+}
+
+html.dark .text-amber-600,
+html.dark .text-amber-500 {
+  color: #fbbf24 !important;
+}
+
+/* Emerald overrides in dark mode */
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+html.dark .border-emerald-100 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+html.dark .text-emerald-900,
+html.dark .text-emerald-700 {
+  color: #a7f3d0 !important;
+}
+
+html.dark .text-emerald-600,
+html.dark .text-emerald-500 {
+  color: #34d399 !important;
+}
+
+/* Translucent backgrounds & special UI elements */
+html.dark .bg-white\/60 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+html.dark .bg-slate-50\/50 {
+  background-color: #0f172a !important;
+}
+
+/* --- MOBILE RESPONSIVENESS OVERRIDES --- */
+@media (max-width: 640px) {
+  .main-content {
+    padding: 1rem !important;
+  }
+  .auth-card {
+    padding: 2rem 1.5rem !important;
+    margin: 1rem auto !important;
+    border-radius: 1.5rem !important;
+  }
+  .auth-card h1 {
+    font-size: 1.5rem !important;
+  }
+  .auth-card p {
+    margin-bottom: 1.5rem !important;
+    font-size: 0.95rem !important;
+  }
+  /* Scale down generous padding and rounded corners of dashboard cards */
+  .p-8 {
+    padding: 1.25rem !important;
+  }
+  .rounded-\[3rem\] {
+    border-radius: 1.5rem !important;
+  }
+  .rounded-\[2\.5rem\] {
+    border-radius: 1.25rem !important;
+  }
+  /* Scale down headings */
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  h2 {
+    font-size: 1.5rem !important;
+  }
+  h3 {
+    font-size: 1.25rem !important;
+  }
+}
+
+
 
 
 

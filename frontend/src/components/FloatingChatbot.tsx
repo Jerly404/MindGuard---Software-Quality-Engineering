@@ -135,11 +135,20 @@ const FloatingChatbot: React.FC = () => {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50 border border-slate-100 animate-in slide-in-from-bottom-10" role="dialog" aria-modal="true" aria-labelledby="chat-widget-header">
-            {/* Header */}
-            <div className="bg-indigo-600 p-4 text-white flex justify-between items-center shadow-lg">
-                <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-xl" aria-hidden="true"><Bot size={20} /></div>
+        <>
+            {/* Backdrop overlay to close chat when clicking outside */}
+            <div 
+                className="fixed inset-0 bg-slate-900/30 backdrop-blur-[2px] z-45 animate-in fade-in-0 duration-200" 
+                onClick={() => setIsOpen(false)}
+                role="presentation"
+                aria-hidden="true"
+            />
+
+            <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-6 sm:bottom-6 w-auto sm:w-[400px] h-[80vh] sm:h-[600px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50 border border-slate-100 animate-in slide-in-from-bottom-10" role="dialog" aria-modal="true" aria-labelledby="chat-widget-header">
+                {/* Header */}
+                <div className="bg-indigo-600 p-4 text-white flex justify-between items-center shadow-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-2 rounded-xl" aria-hidden="true"><Bot size={20} /></div>
                     <div>
                         <p id="chat-widget-header" className="text-xs font-bold leading-none">{t('chat.header')}</p>
                         <p className="text-[10px] text-indigo-200 mt-1 flex items-center gap-1">
@@ -267,7 +276,8 @@ const FloatingChatbot: React.FC = () => {
                 </div>
             </div>
         </div>
-    );
+    </>
+);
 };
 
 export default FloatingChatbot;
